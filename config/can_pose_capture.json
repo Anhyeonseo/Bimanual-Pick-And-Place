@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "dataset_kind": "tabletop_object_pose_capture",
+  "dataset_id": "stand_can_pose_v1",
+  "motion_authorized": false,
+  "robot_target_available": false,
+  "object": {
+    "class_name": "can",
+    "instance_id": "can_measure_before_capture",
+    "allowed_states": [
+      "lying",
+      "upright",
+      "absent",
+      "unknown"
+    ],
+    "dimensions_m": {
+      "diameter": null,
+      "length": null
+    },
+    "mass_kg": null
+  },
+  "camera": {
+    "image_topic": "/camera/top/image_raw",
+    "frames_per_capture": 5,
+    "settle_frames": 5,
+    "interval_s": 0.2,
+    "timeout_s": 30.0,
+    "minimum_sharpness": 20.0,
+    "image_format": "png"
+  },
+  "annotation": {
+    "ground_truth_frame_id": "top_board",
+    "position_unit": "m",
+    "yaw_unit": "deg",
+    "yaw_semantics": "undirected_long_axis_modulo_pi"
+  },
+  "recommended_capture_plan": {
+    "position_labels": [
+      "front",
+      "center",
+      "back",
+      "left",
+      "right"
+    ],
+    "lying_yaw_deg": [
+      0,
+      45,
+      90,
+      135
+    ],
+    "captures_per_condition": 1,
+    "frames_per_capture": 5,
+    "recommended_total_images": 100,
+    "include_upright_and_empty_background": true
+  }
+}
