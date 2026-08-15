@@ -23,6 +23,7 @@ import numpy as np
 
 STATUS = "CAN_OBB_IMAGE_DETECTION_PASS"
 YAW_SEMANTICS = "undirected_long_axis_modulo_pi"
+CAN_CLASS_ID = 0
 
 
 def normalize_axis_yaw_deg(value: float) -> float:
@@ -107,7 +108,9 @@ def detect_image(
             "Ultralytics is required for desktop can detection; install "
             "requirements-training.txt in the training environment"
         ) from error
-    model = ultralytics.YOLO(str(model_path))
+    # Exported ONNX files do not retain enough metadata for Ultralytics to
+    # infer the task reliably and otherwise default to axis-aligned detect.
+    model = ultralytics.YOLO(str(model_path), task="obb")
     results = model.predict(
         source=image,
         conf=confidence_threshold,
@@ -130,7 +133,10 @@ def detect_image(
         class_ids,
         strict=True,
     ):
-        if _class_name(result.names, int(class_id)) != "can":
+        # This is a dedicated one-class can model. Ultralytics may serialize
+        # the display name as "item" when trained with single_cls=True, while
+        # the stable class identity remains class 0.
+        if int(class_id) != CAN_CLASS_ID:
             continue
         if float(confidence) < confidence_threshold:
             continue

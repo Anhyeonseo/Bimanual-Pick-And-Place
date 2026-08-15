@@ -15,17 +15,17 @@
   },
   "object": {
     "class_name": "can",
-    "instance_id": "can_measure_before_capture",
+    "instance_id": "measured_can_122_44x53_mm_13_g",
     "allowed_states": [
       "lying",
       "absent",
       "unknown"
     ],
     "dimensions_m": {
-      "diameter": null,
-      "length": null
+      "diameter": 0.053,
+      "length": 0.12244
     },
-    "mass_kg": null
+    "mass_kg": 0.013
   },
   "camera": {
     "image_topic": "/camera/top/image_raw",

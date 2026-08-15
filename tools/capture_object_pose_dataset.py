@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import math
 from pathlib import Path
-import shutil
 import time
 
 import cv2
@@ -65,6 +64,11 @@ class ObjectPoseCapture(Node):
         self._config = config
         self._received = 0
         self._accepted: list[tuple[np.ndarray, dict]] = []
+        self._target_frame_count = (
+            args.frames_per_capture
+            if args.frames_per_capture is not None
+            else config["camera"]["frames_per_capture"]
+        )
         self._last_accept_monotonic = -math.inf
         self.failure: str | None = None
         self.finished = False
@@ -110,10 +114,10 @@ class ObjectPoseCapture(Node):
             self.get_logger().info(
                 "OBJECT_POSE_FRAME_ACCEPTED "
                 f"count={len(self._accepted)}/"
-                f"{self._config['camera']['frames_per_capture']} "
+                f"{self._target_frame_count} "
                 f"sharpness={sharpness:.3f}"
             )
-            if len(self._accepted) >= self._config["camera"]["frames_per_capture"]:
+            if len(self._accepted) >= self._target_frame_count:
                 self.finished = True
         except Exception as error:
             self.failure = str(error)
@@ -130,6 +134,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--capture-id", required=True)
     parser.add_argument("--state", required=True)
     parser.add_argument("--position-label", required=True)
+    parser.add_argument(
+        "--frames-per-capture",
+        type=int,
+        help="override the configured frame count for this capture",
+    )
     parser.add_argument("--ground-truth-x-m", type=float)
     parser.add_argument("--ground-truth-y-m", type=float)
     parser.add_argument("--ground-truth-yaw-deg", type=float)
@@ -146,16 +155,21 @@ def write_capture(
     accepted: list[tuple[np.ndarray, dict]],
 ) -> tuple[Path, Path]:
     dataset_root = args.dataset_root.resolve()
-    capture_directory = dataset_root / "captures" / args.capture_id
-    if capture_directory.exists():
-        raise ValueError(f"capture already exists: {capture_directory}")
-    capture_directory.mkdir(parents=True, exist_ok=False)
+    capture_path = dataset_root / f"{args.capture_id}.json"
+    existing_frames = list(dataset_root.glob(f"{args.capture_id}_frame_*.png"))
+    if capture_path.exists() or existing_frames:
+        raise ValueError(f"capture already exists: {args.capture_id}")
+    dataset_root.mkdir(parents=True, exist_ok=True)
+    created_paths: list[Path] = []
     try:
         frame_records = []
         for index, (image, record) in enumerate(accepted):
-            image_path = capture_directory / f"frame_{index:03d}.png"
+            image_path = dataset_root / (
+                f"{args.capture_id}_frame_{index:03d}.png"
+            )
             if not cv2.imwrite(str(image_path), image):
                 raise RuntimeError(f"failed to write {image_path}")
+            created_paths.append(image_path)
             frame_records.append(
                 {
                     **record,
@@ -183,8 +197,8 @@ def write_capture(
             frames=frame_records,
             notes=args.notes,
         )
-        capture_path = capture_directory / "capture.json"
         atomic_write_json(capture_path, document)
+        created_paths.append(capture_path)
         manifest_path = update_dataset_manifest(
             dataset_root,
             config,
@@ -193,7 +207,8 @@ def write_capture(
         )
         return capture_path, manifest_path
     except Exception:
-        shutil.rmtree(capture_directory)
+        for path in reversed(created_paths):
+            path.unlink(missing_ok=True)
         raise
 
 
@@ -201,17 +216,19 @@ def main() -> int:
     args = parse_args()
     validate_identifier(args.capture_id, "capture_id")
     config = load_capture_config(args.config.resolve())
+    if args.frames_per_capture is not None and args.frames_per_capture <= 0:
+        raise ValueError("--frames-per-capture must be positive")
     if args.state not in config["object"]["allowed_states"]:
         raise ValueError(
             f"--state must be one of {config['object']['allowed_states']}"
         )
     if (args.ground_truth_x_m is None) != (args.ground_truth_y_m is None):
         raise ValueError("ground-truth x and y must be supplied together")
-    capture_directory = (
-        args.dataset_root.resolve() / "captures" / args.capture_id
-    )
-    if capture_directory.exists():
-        raise ValueError(f"capture already exists: {capture_directory}")
+    dataset_root = args.dataset_root.resolve()
+    capture_path = dataset_root / f"{args.capture_id}.json"
+    existing_frames = list(dataset_root.glob(f"{args.capture_id}_frame_*.png"))
+    if capture_path.exists() or existing_frames:
+        raise ValueError(f"capture already exists: {args.capture_id}")
 
     rclpy.init()
     node = ObjectPoseCapture(args, config)

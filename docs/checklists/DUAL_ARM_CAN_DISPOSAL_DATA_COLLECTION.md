@@ -23,6 +23,7 @@ python3 tools/capture_object_pose_dataset.py \
   --capture-id left_center_yaw045_trial01 \
   --state lying \
   --position-label left_center \
+  --frames-per-capture 1 \
   --ground-truth-x-m 0.000 \
   --ground-truth-y-m 0.000 \
   --ground-truth-yaw-deg 45 \
@@ -31,8 +32,9 @@ python3 tools/capture_object_pose_dataset.py \
   --glare low
 ~~~
 
-각 실행은 `captures/<capture-id>/` 아래 PNG 5장과 `capture.json`을 만들고,
-dataset root의 `dataset.json`에 SHA-256과 함께 등록한다. 같은 capture ID는
+각 실행은 dataset root 한 폴더에 `<capture-id>_frame_000.png` 형식의 PNG와
+`<capture-id>.json`을 만들고, `dataset.json`에 SHA-256과 함께 등록한다.
+`--frames-per-capture 1`을 사용하면 배치당 한 장만 저장하며, 같은 capture ID는
 덮어쓰지 않는다.
 
 ## 권장 수집량
@@ -55,7 +57,7 @@ MoveIt 단계다.
 ~~~bash
 python3 tools/detect_can_obb_image.py \
   --model artifacts/can_obb/best.pt \
-  --image datasets/dual_arm_can_disposal_20260815/captures/left_center_yaw045_trial01/frame_000.png \
+  --image datasets/dual_arm_can_disposal_20260815/left_center_yaw045_trial01_frame_000.png \
   --output artifacts/can_obb/detection.json \
   --overlay artifacts/can_obb/detection_overlay.png
 ~~~

@@ -269,7 +269,7 @@ def update_dataset_manifest(
     dataset_root = dataset_root.resolve()
     manifest_path = dataset_root / "dataset.json"
     capture_id = capture_document["capture_id"]
-    capture_path = dataset_root / "captures" / capture_id / "capture.json"
+    capture_path = dataset_root / f"{capture_id}.json"
     if not capture_path.is_file():
         raise ValueError(f"capture metadata is missing: {capture_path}")
     relative_capture = capture_path.relative_to(dataset_root).as_posix()

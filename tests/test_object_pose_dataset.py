@@ -66,7 +66,7 @@ def capture(config: dict, capture_id: str) -> dict:
 
 
 def write_capture_metadata(root: Path, document: dict) -> None:
-    path = root / "captures" / document["capture_id"] / "capture.json"
+    path = root / f"{document['capture_id']}.json"
     atomic_write_json(path, document)
 
 
@@ -214,7 +214,11 @@ def test_write_capture_creates_lossless_frames_and_manifest(tmp_path):
 
     capture_document = json.loads(capture_path.read_text(encoding="utf-8"))
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert (capture_path.parent / "frame_000.png").is_file()
+    assert (
+        capture_path.parent
+        / f"{arguments.capture_id}_frame_000.png"
+    ).is_file()
+    assert not (tmp_path / "captures").exists()
     assert capture_document["annotation"]["status"] == "measured"
     assert manifest["captures"][0]["id"] == arguments.capture_id
 
