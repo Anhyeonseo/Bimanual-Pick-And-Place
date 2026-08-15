@@ -91,14 +91,21 @@ def validate_capture_config(document: dict[str, Any]) -> dict[str, Any]:
     task = document.get("task")
     if not isinstance(task, dict):
         raise ValueError("task config is required")
-    if task.get("name") != "stand_fallen_object":
-        raise ValueError("task.name must be stand_fallen_object")
+    if task.get("name") != "dual_arm_can_disposal":
+        raise ValueError("task.name must be dual_arm_can_disposal")
     if task.get("initial_state") != "lying":
         raise ValueError("task.initial_state must be lying")
-    if task.get("goal_state") != "upright":
-        raise ValueError("task.goal_state must be upright")
-    if task.get("support_end") != "bottom":
-        raise ValueError("task.support_end must be bottom")
+    if task.get("goal_state") != "disposed":
+        raise ValueError("task.goal_state must be disposed")
+    routing = task.get("routing")
+    if not isinstance(routing, dict):
+        raise ValueError("task.routing is required")
+    if routing.get("right_workspace") != "right_arm_to_right_bin":
+        raise ValueError("task.routing.right_workspace is invalid")
+    if routing.get("left_workspace") != (
+        "left_arm_to_fixed_handoff_then_right_bin"
+    ):
+        raise ValueError("task.routing.left_workspace is invalid")
 
     object_config = document.get("object")
     if not isinstance(object_config, dict):
@@ -148,19 +155,10 @@ def validate_capture_config(document: dict[str, Any]) -> dict[str, Any]:
     frame_id = annotation.get("ground_truth_frame_id")
     if not isinstance(frame_id, str) or not frame_id:
         raise ValueError("annotation.ground_truth_frame_id is required")
-    if annotation.get("long_axis_yaw_semantics") != (
-        "undirected_long_axis_modulo_pi"
-    ):
+    if annotation.get("yaw_semantics") != "undirected_long_axis_modulo_pi":
         raise ValueError(
-            "annotation.long_axis_yaw_semantics must be "
+            "annotation.yaw_semantics must be "
             "undirected_long_axis_modulo_pi"
-        )
-    if annotation.get("bottom_end_yaw_semantics") != (
-        "directed_center_to_bottom_end_modulo_2pi"
-    ):
-        raise ValueError(
-            "annotation.bottom_end_yaw_semantics must be "
-            "directed_center_to_bottom_end_modulo_2pi"
         )
     return document
 
@@ -176,38 +174,23 @@ def normalize_undirected_yaw_deg(value: float) -> float:
     return 0.0 if math.isclose(normalized, 180.0) else normalized
 
 
-def normalize_directed_yaw_deg(value: float) -> float:
-    if not math.isfinite(value):
-        raise ValueError("bottom-end yaw must be finite")
-    normalized = value % 360.0
-    return 0.0 if math.isclose(normalized, 360.0) else normalized
-
-
 def build_annotation(
     *,
     frame_id: str,
     x_m: float | None,
     y_m: float | None,
-    bottom_end_yaw_deg: float | None,
+    yaw_deg: float | None,
 ) -> dict[str, Any]:
     if (x_m is None) != (y_m is None):
         raise ValueError("ground-truth x and y must be supplied together")
     for name, value in (("x_m", x_m), ("y_m", y_m)):
         if value is not None and not math.isfinite(value):
             raise ValueError(f"ground-truth {name} must be finite")
-    normalized_bottom_end_yaw = (
-        None
-        if bottom_end_yaw_deg is None
-        else normalize_directed_yaw_deg(bottom_end_yaw_deg)
-    )
-    normalized_long_axis_yaw = (
-        None
-        if normalized_bottom_end_yaw is None
-        else normalize_undirected_yaw_deg(normalized_bottom_end_yaw)
+    normalized_yaw = (
+        None if yaw_deg is None else normalize_undirected_yaw_deg(yaw_deg)
     )
     measured_fields = sum(
-        value is not None
-        for value in (x_m, y_m, normalized_bottom_end_yaw)
+        value is not None for value in (x_m, y_m, normalized_yaw)
     )
     if measured_fields == 0:
         status = "pending"
@@ -219,12 +202,8 @@ def build_annotation(
         "status": status,
         "frame_id": frame_id,
         "center_m": None if x_m is None else [float(x_m), float(y_m)],
-        "long_axis_yaw_deg": normalized_long_axis_yaw,
-        "bottom_end_direction_yaw_deg": normalized_bottom_end_yaw,
-        "long_axis_yaw_semantics": "undirected_long_axis_modulo_pi",
-        "bottom_end_yaw_semantics": (
-            "directed_center_to_bottom_end_modulo_2pi"
-        ),
+        "long_axis_yaw_deg": normalized_yaw,
+        "yaw_semantics": "undirected_long_axis_modulo_pi",
     }
 
 

@@ -21,14 +21,13 @@ from object_pose_dataset import (  # noqa: E402
     canonical_sha256,
     load_capture_config,
     make_capture_document,
-    normalize_directed_yaw_deg,
     normalize_undirected_yaw_deg,
     update_dataset_manifest,
 )
 from capture_object_pose_dataset import write_capture  # noqa: E402
 
 
-CONFIG_PATH = ROOT / "config" / "can_pose_capture.json"
+CONFIG_PATH = ROOT / "config" / "can_disposal_capture.json"
 
 
 def frame(name: str = "frame_000.png") -> dict:
@@ -54,7 +53,7 @@ def capture(config: dict, capture_id: str) -> dict:
             frame_id="top_board",
             x_m=0.1,
             y_m=-0.2,
-            bottom_end_yaw_deg=225.0,
+            yaw_deg=225.0,
         ),
         conditions={
             "background": "table",
@@ -78,6 +77,10 @@ def test_can_capture_config_is_a_read_only_generic_dataset_contract():
     assert config["motion_authorized"] is False
     assert config["robot_target_available"] is False
     assert config["camera"]["frames_per_capture"] == 5
+    assert config["task"]["goal_state"] == "disposed"
+    assert config["task"]["routing"]["right_workspace"] == (
+        "right_arm_to_right_bin"
+    )
 
 
 @pytest.mark.parametrize(
@@ -88,26 +91,17 @@ def test_undirected_yaw_is_normalized_modulo_180(given, expected):
     assert normalize_undirected_yaw_deg(given) == pytest.approx(expected)
 
 
-@pytest.mark.parametrize(
-    ("given", "expected"),
-    [(0.0, 0.0), (225.0, 225.0), (360.0, 0.0), (-45.0, 315.0)],
-)
-def test_bottom_end_yaw_preserves_direction_modulo_360(given, expected):
-    assert normalize_directed_yaw_deg(given) == pytest.approx(expected)
-
-
 def test_annotation_allows_capture_before_manual_measurement():
     annotation = build_annotation(
         frame_id="top_board",
         x_m=None,
         y_m=None,
-        bottom_end_yaw_deg=None,
+        yaw_deg=None,
     )
 
     assert annotation["status"] == "pending"
     assert annotation["center_m"] is None
     assert annotation["long_axis_yaw_deg"] is None
-    assert annotation["bottom_end_direction_yaw_deg"] is None
 
 
 def test_annotation_marks_complete_manual_pose_as_measured():
@@ -115,12 +109,11 @@ def test_annotation_marks_complete_manual_pose_as_measured():
         frame_id="top_board",
         x_m=0.1,
         y_m=-0.2,
-        bottom_end_yaw_deg=225.0,
+        yaw_deg=225.0,
     )
 
     assert annotation["status"] == "measured"
     assert annotation["long_axis_yaw_deg"] == pytest.approx(45.0)
-    assert annotation["bottom_end_direction_yaw_deg"] == pytest.approx(225.0)
 
 
 def test_annotation_rejects_only_one_position_axis():
@@ -129,7 +122,7 @@ def test_annotation_rejects_only_one_position_axis():
             frame_id="top_board",
             x_m=0.1,
             y_m=None,
-            bottom_end_yaw_deg=0.0,
+            yaw_deg=0.0,
         )
 
 
@@ -197,7 +190,7 @@ def test_write_capture_creates_lossless_frames_and_manifest(tmp_path):
         position_label="center",
         ground_truth_x_m=0.1,
         ground_truth_y_m=-0.2,
-        bottom_end_yaw_deg=225.0,
+        ground_truth_yaw_deg=45.0,
         background="table",
         lighting="room",
         glare="low",

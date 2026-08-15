@@ -132,15 +132,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--position-label", required=True)
     parser.add_argument("--ground-truth-x-m", type=float)
     parser.add_argument("--ground-truth-y-m", type=float)
-    parser.add_argument(
-        "--bottom-end-yaw-deg",
-        type=float,
-        help=(
-            "directed angle from the can center toward its bottom end in "
-            "the configured ground-truth frame; required to distinguish "
-            "normal upright placement from upside-down placement"
-        ),
-    )
+    parser.add_argument("--ground-truth-yaw-deg", type=float)
     parser.add_argument("--background", default="default")
     parser.add_argument("--lighting", default="default")
     parser.add_argument("--glare", default="none")
@@ -175,7 +167,7 @@ def write_capture(
             frame_id=config["annotation"]["ground_truth_frame_id"],
             x_m=args.ground_truth_x_m,
             y_m=args.ground_truth_y_m,
-            bottom_end_yaw_deg=args.bottom_end_yaw_deg,
+            yaw_deg=args.ground_truth_yaw_deg,
         )
         document = make_capture_document(
             config=config,
