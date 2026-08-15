@@ -4,6 +4,13 @@
   "dataset_id": "stand_can_pose_v1",
   "motion_authorized": false,
   "robot_target_available": false,
+  "task": {
+    "name": "stand_fallen_object",
+    "initial_state": "lying",
+    "goal_state": "upright",
+    "support_end": "bottom",
+    "success_requires_correct_support_end": true
+  },
   "object": {
     "class_name": "can",
     "instance_id": "can_measure_before_capture",
@@ -32,7 +39,8 @@
     "ground_truth_frame_id": "top_board",
     "position_unit": "m",
     "yaw_unit": "deg",
-    "yaw_semantics": "undirected_long_axis_modulo_pi"
+    "long_axis_yaw_semantics": "undirected_long_axis_modulo_pi",
+    "bottom_end_yaw_semantics": "directed_center_to_bottom_end_modulo_2pi"
   },
   "recommended_capture_plan": {
     "position_labels": [
@@ -51,6 +59,7 @@
     "captures_per_condition": 1,
     "frames_per_capture": 5,
     "recommended_total_images": 100,
-    "include_upright_and_empty_background": true
+    "include_upright_and_empty_background": true,
+    "upright_reference_must_show_top_end": true
   }
 }
