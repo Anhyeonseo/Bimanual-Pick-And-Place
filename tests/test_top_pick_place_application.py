@@ -291,7 +291,7 @@ def test_each_arm_plan_requires_operator_screen_lateral_correction() -> None:
     assert "LEFT_SCREEN_X_CORRECTION_M = 0.01372" in planner_source
     assert "RIGHT_SCREEN_X_CORRECTION_M = -0.02947" in planner_source
     assert "screen_positive_x_unit_workcell" in planner_source
-    assert '"schema_version": 13 if profile.name == "can" else 12' in planner_source
+    assert '"schema_version": 17 if profile.name == "can" else 12' in planner_source
     assert "EXPECTED_LEFT_SCREEN_X_CORRECTION_M = 0.01372" in RUNNER_SOURCE
     assert "EXPECTED_RIGHT_SCREEN_X_CORRECTION_M = -0.02947" in RUNNER_SOURCE
     assert "dynamic camera plan {side} lateral contract is invalid" in RUNNER_SOURCE

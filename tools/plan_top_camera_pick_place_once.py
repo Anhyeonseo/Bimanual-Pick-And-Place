@@ -95,12 +95,19 @@ GRIPPER_CLOSE_RAD = (2048 - GRIPPER_CLOSE_TARGET_RAW) * RAW_STEP_RAD
 POSITION_TOLERANCE_M = 0.001
 PLAN_RESIDUAL_BOUND_M = 0.0021
 GRASP_CROSSING_RESIDUAL_BOUND_RAD = math.radians(2.0)
+CAN_TOP_DOWN_TILT_BOUND_RAD = math.radians(20.0)
+CAN_DESIRED_APPROACH_WORKCELL = np.array([0.0, 0.0, -1.0])
 CAN_LENGTH_M = 0.12244
 CAN_DIAMETER_M = 0.053
 CAN_MASS_KG = 0.013
 CAN_GRASP_WIDTH_M = 0.044
-CAN_GRIPPER_CLOSE_RAW_MIN = 1948
-CAN_GRIPPER_CLOSE_RAW_MAX = 2009
+CAN_GRIPPER_OPEN_TARGET_RAW = 2500
+CAN_GRIPPER_CLOSE_TARGET_RAW = 2285
+CAN_GRIPPER_CLOSE_RAW_MIN = CAN_GRIPPER_CLOSE_TARGET_RAW
+CAN_GRIPPER_CLOSE_RAW_MAX = CAN_GRIPPER_CLOSE_TARGET_RAW
+CAN_CONTACT_RESIDUAL_RAW_MIN = 19
+CAN_CONTACT_RESIDUAL_RAW_MAX = 23
+CAN_MAXIMUM_UNMONITORED_CONTACT_HOLD_S = 5.0
 CAN_PICK_PREGRASP_OFFSET_M = 0.100
 CAN_PICK_GRASP_OFFSET_M = 0.0
 CAN_PICK_LIFT_OFFSET_M = 0.080
@@ -214,8 +221,8 @@ def parse_args() -> argparse.Namespace:
         "--can-gripper-close-raw",
         type=int,
         help=(
-            "measured raw close target for the 44 mm can grasp; required for "
-            "the can profile because millimetres cannot be guessed as servo raw"
+            "override the commissioned 44 mm can grasp target; the can profile "
+            f"defaults to and currently accepts only raw {CAN_GRIPPER_CLOSE_TARGET_RAW}"
         ),
     )
     parser.add_argument(
@@ -266,10 +273,7 @@ def parse_args() -> argparse.Namespace:
     if args.object_profile == "can" and args.task != "pick-only":
         parser.error("the can profile currently supports only --task pick-only")
     if args.object_profile == "can" and args.can_gripper_close_raw is None:
-        parser.error(
-            "--can-gripper-close-raw is required for the can profile; "
-            "measure the servo raw value at the confirmed 44 mm grasp"
-        )
+        args.can_gripper_close_raw = CAN_GRIPPER_CLOSE_TARGET_RAW
     if (
         args.can_gripper_close_raw is not None
         and not CAN_GRIPPER_CLOSE_RAW_MIN
@@ -686,11 +690,15 @@ def solve_endpoint_pose_with_grasp_yaw(
     lower,
     upper,
 ):
-    """Solve TCP xyz and make the jaw closing line cross the can body."""
+    """Solve a vertical top-down TCP pose whose jaws cross the can body."""
     original = np.asarray(position_only_solution, dtype=float)
     reference = np.asarray(reference, dtype=float)
     target = kinematics.point_in_base_frame(
         np.asarray(target_workcell, dtype=float),
+        root_link=WORKCELL_FRAME,
+    )
+    desired_approach = kinematics.vector_in_base_frame(
+        CAN_DESIRED_APPROACH_WORKCELL,
         root_link=WORKCELL_FRAME,
     )
     finger_target_yaw = wrap_half_turn(object_yaw_rad + math.pi / 2.0)
@@ -714,6 +722,29 @@ def solve_endpoint_pose_with_grasp_yaw(
             corrected[4] = float(yaw_solution["solved_wrist_roll_rad"])
             seeds.append(corrected)
 
+    # Position-only IK commonly returns the side-entry branch. Add a small,
+    # deterministic posture sweep so the nonlinear solve can discover the
+    # physically distinct top-down branch without relying on randomness.
+    midpoint = (lower + upper) / 2.0
+    for shoulder_fraction, elbow_fraction in (
+        (0.25, 0.25),
+        (0.25, 0.75),
+        (0.50, 0.25),
+        (0.50, 0.50),
+        (0.50, 0.75),
+        (0.75, 0.25),
+        (0.75, 0.50),
+        (0.75, 0.75),
+    ):
+        for flex_fraction in (0.02, 0.15, 0.50):
+            swept = np.array(midpoint, copy=True)
+            swept[0] = original[0]
+            swept[1] = lower[1] + shoulder_fraction * (upper[1] - lower[1])
+            swept[2] = lower[2] + elbow_fraction * (upper[2] - lower[2])
+            swept[3] = lower[3] + flex_fraction * (upper[3] - lower[3])
+            swept[4] = original[4]
+            seeds.append(swept)
+
     def residuals(values):
         positions = dict(zip(joint_names, values, strict=True))
         position_residual_mm = 1000.0 * (
@@ -722,6 +753,9 @@ def solve_endpoint_pose_with_grasp_yaw(
         yaw_residual = 100.0 * wrap_half_turn(
             kinematics.finger_yaw(positions) - finger_target_yaw
         )
+        # Position and jaw crossing are hard task constraints. The approach
+        # tilt is evaluated separately below so the solver never trades
+        # centimetres of TCP error for a cosmetically more vertical pose.
         return np.concatenate((position_residual_mm, [yaw_residual]))
 
     candidates = []
@@ -745,9 +779,14 @@ def solve_endpoint_pose_with_grasp_yaw(
         crossing_error_rad = abs(
             wrap_half_turn(achieved_finger_yaw - finger_target_yaw)
         )
+        achieved_approach = kinematics.approach_axis(positions)
+        approach_tilt_rad = math.acos(
+            float(np.clip(np.dot(achieved_approach, desired_approach), -1.0, 1.0))
+        )
         if (
             position_error_m > PLAN_RESIDUAL_BOUND_M
             or crossing_error_rad > GRASP_CROSSING_RESIDUAL_BOUND_RAD
+            or approach_tilt_rad > CAN_TOP_DOWN_TILT_BOUND_RAD
         ):
             continue
         key = tuple(round(float(value), 8) for value in solved)
@@ -761,8 +800,10 @@ def solve_endpoint_pose_with_grasp_yaw(
                 float(np.linalg.norm(transition)),
                 position_error_m,
                 crossing_error_rad,
+                approach_tilt_rad,
                 solved,
                 achieved_finger_yaw,
+                achieved_approach,
                 int(result.nfev),
             )
         )
@@ -770,21 +811,24 @@ def solve_endpoint_pose_with_grasp_yaw(
     if not candidates:
         raise RuntimeError(
             f"no {side} endpoint solution meets both TCP position and "
-            "can crossing-yaw bounds"
+            "can crossing-yaw and top-down approach bounds"
         )
-    candidates.sort(key=lambda item: item[:4])
+    candidates.sort(key=lambda item: (item[4], item[2], item[3], item[0], item[1]))
     selected = candidates[0]
     return {
-        "positions_rad": tuple(float(value) for value in selected[4]),
+        "positions_rad": tuple(float(value) for value in selected[5]),
         "position_residual_m": selected[2],
         "finger_target_yaw_rad": finger_target_yaw,
-        "achieved_finger_yaw_rad": selected[5],
+        "achieved_finger_yaw_rad": selected[6],
         "crossing_residual_rad": selected[3],
+        "desired_approach_axis": tuple(float(value) for value in desired_approach),
+        "achieved_approach_axis": tuple(float(value) for value in selected[7]),
+        "approach_tilt_rad": selected[4],
         "reference_maximum_joint_delta_rad": selected[0],
         "candidate_count": len(candidates),
-        "solver_evaluations": selected[6],
+        "solver_evaluations": selected[8],
         "wrist_roll_reference_rad": float(reference[4]),
-        "wrist_roll_delta_rad": float(selected[4][4] - reference[4]),
+        "wrist_roll_delta_rad": float(selected[5][4] - reference[4]),
     }
 
 
@@ -849,6 +893,7 @@ def plan_endpoint(
         )
     orientation_contract = {
         "orientation_constraint_applied": False,
+        "top_down_constraint_applied": False,
         "wrist_roll_yaw_correction_applied": False,
         "wrist_roll_policy": "hold_bimanual_q0",
         "wrist_roll_locked": True,
@@ -857,11 +902,12 @@ def plan_endpoint(
     if enforce_grasp_yaw:
         orientation_contract.update({
             "orientation_constraint_applied": True,
+            "top_down_constraint_applied": True,
             "wrist_roll_yaw_correction_applied": True,
             "wrist_roll_policy": "solve_can_crossing_yaw",
             "wrist_roll_locked": False,
             "relationship": (
-                "enforced_jaw_closing_line_perpendicular_to_can_long_axis"
+                "enforced_overhead_downward_jaws_perpendicular_to_can_long_axis"
             ),
         })
     return {
@@ -870,6 +916,9 @@ def plan_endpoint(
         "yaw_rad": yaw,
         "orientation_constraint_applied": orientation_contract[
             "orientation_constraint_applied"
+        ],
+        "top_down_constraint_applied": orientation_contract[
+            "top_down_constraint_applied"
         ],
         "wrist_roll_yaw_correction_applied": orientation_contract[
             "wrist_roll_yaw_correction_applied"
@@ -887,6 +936,22 @@ def plan_endpoint(
             "achieved_finger_yaw_rad": crossing["achieved_finger_yaw_rad"],
             "crossing_residual_rad": crossing["crossing_residual_rad"],
             "crossing_residual_bound_rad": GRASP_CROSSING_RESIDUAL_BOUND_RAD,
+            "desired_approach_axis": (
+                list(crossing["desired_approach_axis"])
+                if enforce_grasp_yaw
+                else None
+            ),
+            "achieved_approach_axis": (
+                list(crossing["achieved_approach_axis"])
+                if enforce_grasp_yaw
+                else None
+            ),
+            "approach_tilt_rad": (
+                crossing["approach_tilt_rad"] if enforce_grasp_yaw else None
+            ),
+            "approach_tilt_bound_rad": (
+                CAN_TOP_DOWN_TILT_BOUND_RAD if enforce_grasp_yaw else None
+            ),
         },
         "position_only_final_joint_positions_rad": list(position_only_final),
         "final_joint_positions_rad": list(final),
@@ -1287,11 +1352,20 @@ def main() -> int:
             if profile.name == "can"
             else GRIPPER_CLOSE_TARGET_RAW
         )
+        gripper_open_target_raw = (
+            CAN_GRIPPER_OPEN_TARGET_RAW
+            if profile.name == "can"
+            else GRIPPER_OPEN_TARGET_RAW
+        )
+        gripper_open_rad = (
+            2048 - gripper_open_target_raw
+        ) * RAW_STEP_RAD
         gripper_close_rad = (
             2048 - gripper_close_target_raw
         ) * RAW_STEP_RAD
         steps = steps_from_phases(
             phases,
+            gripper_open_rad=gripper_open_rad,
             gripper_close_rad=gripper_close_rad,
         )
         _, selected_joints, _ = arm_contract(side)
@@ -1315,7 +1389,7 @@ def main() -> int:
             }
         )
         document = {
-            "schema_version": 13 if profile.name == "can" else 12,
+            "schema_version": 17 if profile.name == "can" else 12,
             "status": (
                 "DYNAMIC_TOP_CAN_PICK_PLAN_ONLY_PASS"
                 if profile.name == "can"
@@ -1343,17 +1417,26 @@ def main() -> int:
                 else None
             ),
             "terminal_behavior": (
-                "hold_can_at_pick_lift_with_gripper_closed"
+                "bounded_hold_at_pick_lift_release_required_within_5s"
+                if profile.name == "can" and args.task == "pick-only"
+                else "hold_object_at_pick_lift_with_gripper_closed"
                 if args.task == "pick-only"
                 else "return_selected_arm_to_q0"
             ),
             "execution_support": {
                 "supported_by_existing_runner": (
-                    profile.name == "pen" and args.task == "pick-place"
+                    (profile.name == "pen" and args.task == "pick-place")
+                    or (profile.name == "can" and args.task == "pick-only")
+                ),
+                "runner": (
+                    "tools/run_top_can_pick_once.py"
+                    if profile.name == "can"
+                    else "tools/run_top_pick_place_application_once.py"
                 ),
                 "reason": (
-                    "can path remains plan-only until 44 mm raw close target "
-                    "and orientation-aware wrist motion pass hardware commissioning"
+                    "supervised can execution requires an exact plan hash and "
+                    "operator confirmation; lift, replace, and release are "
+                    "bounded by the five-second unmonitored contact-hold limit"
                     if profile.name == "can"
                     else "legacy pen runner contract"
                 ),
@@ -1366,7 +1449,11 @@ def main() -> int:
                 "image_width_px": image_width_px,
                 "image_height_px": image_height_px,
                 "deadband_px": args.routing_deadband_px,
-                "nonselected_arm_behavior": "hold_bimanual_q0",
+                "nonselected_arm_behavior": (
+                    "hold_current_pose"
+                    if profile.name == "can"
+                    else "hold_bimanual_q0"
+                ),
             },
             "planning_frame": WORKCELL_FRAME,
             "robot_description": {
@@ -1396,8 +1483,11 @@ def main() -> int:
             "height_adjustment": height_adjustment,
             "gripper_contract": {
                 "preopen_required": True,
-                "open_target_raw": GRIPPER_OPEN_TARGET_RAW,
-                "open_target_rad": GRIPPER_OPEN_RAD,
+                "commissioned_gripper_sides": (
+                    ["left"] if profile.name == "can" else ["left", "right"]
+                ),
+                "open_target_raw": gripper_open_target_raw,
+                "open_target_rad": gripper_open_rad,
                 "open_phase": "before_approach",
                 "close_target_raw": gripper_close_target_raw,
                 "close_target_rad": gripper_close_rad,
@@ -1406,9 +1496,26 @@ def main() -> int:
                 ),
                 "raw_width_mapping_inferred": False,
                 "contact_threshold_raw": CONTACT_THRESHOLD_RAW,
-                "empty_grasp_observed_residual_raw": 2,
-                "held_object_observed_residual_raw": 8,
-                "expected_held_residual_after_target_change_raw": 23,
+                "open_observed_residual_raw": (
+                    6 if profile.name == "can" else None
+                ),
+                "held_object_observed_residual_raw": (
+                    None if profile.name == "can" else 8
+                ),
+                "expected_held_residual_raw_range": (
+                    [CAN_CONTACT_RESIDUAL_RAW_MIN, CAN_CONTACT_RESIDUAL_RAW_MAX]
+                    if profile.name == "can"
+                    else None
+                ),
+                "automatic_retry_count": 0,
+                "continuous_load_current_monitoring_available": False,
+                "maximum_unmonitored_contact_hold_s": (
+                    CAN_MAXIMUM_UNMONITORED_CONTACT_HOLD_S
+                    if profile.name == "can"
+                    else None
+                ),
+                "release_on_hold_timeout_required": profile.name == "can",
+                "firmware_position_or_torque_limits_modified": False,
             },
             "place_target_source": place_source,
             "calibration": {
@@ -1474,13 +1581,18 @@ def main() -> int:
                 f"place_xy=({place['grasp'][0]:.6f},{place['grasp'][1]:.6f}) "
                 f"expected_next_arm={place_source.get('expected_next_selected_arm', 'none')}"
             )
+        expected_held_residual = (
+            f"{CAN_CONTACT_RESIDUAL_RAW_MIN}..{CAN_CONTACT_RESIDUAL_RAW_MAX}"
+            if profile.name == "can"
+            else "8"
+        )
         print(
             "DYNAMIC_PICK_GRIPPER_CONTRACT_PASS "
-            f"open_target_raw={GRIPPER_OPEN_TARGET_RAW} "
+            f"open_target_raw={gripper_open_target_raw} "
             f"close_target_raw={gripper_close_target_raw} "
             f"close_target_rad={gripper_close_rad:.6f} "
             f"contact_threshold_raw={CONTACT_THRESHOLD_RAW} "
-            "expected_held_residual_raw=23"
+            f"expected_held_residual_raw={expected_held_residual}"
         )
         print(
             f"{document['status']} selected_arm={side} "

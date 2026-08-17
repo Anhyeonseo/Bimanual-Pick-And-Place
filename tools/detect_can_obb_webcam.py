@@ -9,9 +9,12 @@ exit, or use Ctrl+C in the terminal.
 from __future__ import annotations
 
 import argparse
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import math
 from pathlib import Path
 import sys
+import threading
 import time
 
 import cv2
@@ -34,6 +37,88 @@ from so101_top_perception.obb_detector import (  # noqa: E402
 
 WINDOW_NAME = "Can OBB webcam - q/Esc to quit"
 STATUS = "CAN_OBB_WEBCAM_PREVIEW_PASS"
+
+
+class MjpegPreview:
+    """Serve the latest overlay without requiring OpenCV HighGUI."""
+
+    def __init__(self, port: int) -> None:
+        self._condition = threading.Condition()
+        self._jpeg: bytes | None = None
+        preview = self
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self) -> None:  # noqa: N802
+                if self.path in ("/", "/index.html"):
+                    body = (
+                        b"<!doctype html><title>Can OBB preview</title>"
+                        b"<style>body{margin:0;background:#111;color:#eee;"
+                        b"font-family:sans-serif}img{max-width:100vw;"
+                        b"max-height:100vh}</style>"
+                        b"<img src='/stream.mjpg'>"
+                    )
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header("Content-Type", "text/html")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
+                if self.path != "/stream.mjpg":
+                    self.send_error(HTTPStatus.NOT_FOUND)
+                    return
+                self.send_response(HTTPStatus.OK)
+                self.send_header(
+                    "Content-Type",
+                    "multipart/x-mixed-replace; boundary=frame",
+                )
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                previous: bytes | None = None
+                try:
+                    while True:
+                        with preview._condition:
+                            preview._condition.wait_for(
+                                lambda: preview._jpeg is not None
+                                and preview._jpeg is not previous,
+                                timeout=2.0,
+                            )
+                            current = preview._jpeg
+                        if current is None or current is previous:
+                            continue
+                        previous = current
+                        self.wfile.write(b"--frame\r\n")
+                        self.wfile.write(b"Content-Type: image/jpeg\r\n")
+                        self.wfile.write(
+                            f"Content-Length: {len(current)}\r\n\r\n".encode()
+                        )
+                        self.wfile.write(current)
+                        self.wfile.write(b"\r\n")
+                except (BrokenPipeError, ConnectionResetError):
+                    return
+
+            def log_message(self, _format: str, *_args: object) -> None:
+                return
+
+        self._server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
+        self._thread = threading.Thread(
+            target=self._server.serve_forever,
+            name="can-obb-mjpeg-preview",
+            daemon=True,
+        )
+        self._thread.start()
+
+    def publish(self, image: np.ndarray) -> None:
+        ok, encoded = cv2.imencode(".jpg", image)
+        if not ok:
+            raise RuntimeError("failed to encode MJPEG preview frame")
+        with self._condition:
+            self._jpeg = encoded.tobytes()
+            self._condition.notify_all()
+
+    def close(self) -> None:
+        self._server.shutdown()
+        self._server.server_close()
+        self._thread.join(timeout=2.0)
 
 
 def parse_camera_source(value: str) -> int | str:
@@ -106,11 +191,11 @@ def infer_can_detections(
     decoded = decode_ultralytics_obb(
         output,
         transform,
-        class_count=1,
-        pen_class_id=0,
-        confidence_threshold=confidence,
-        iou_threshold=iou,
-        maximum_detections=5,
+        1,
+        0,
+        confidence,
+        iou,
+        5,
     )
     return [
         pose_from_corners(
@@ -169,12 +254,19 @@ def parse_args() -> argparse.Namespace:
         choices=("auto", "opencv", "onnxruntime"),
         default="auto",
     )
+    parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="serve the overlay as MJPEG instead of opening a GUI window",
+    )
+    parser.add_argument("--mjpeg-port", type=int, default=8090)
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     capture = None
+    preview = None
     try:
         model_path = args.model.resolve()
         if not model_path.is_file():
@@ -187,6 +279,8 @@ def main() -> int:
             raise ValueError("confidence and iou must be within (0, 1)")
         if not math.isfinite(args.inference_hz) or args.inference_hz <= 0.0:
             raise ValueError("inference-hz must be positive")
+        if not 1 <= args.mjpeg_port <= 65535:
+            raise ValueError("mjpeg-port must be within 1..65535")
 
         source = parse_camera_source(args.camera)
         backend = CanOnnxBackend(model_path, args.backend)
@@ -197,7 +291,10 @@ def main() -> int:
         if not capture.isOpened():
             raise RuntimeError(f"failed to open camera: {args.camera}")
 
-        cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+        if args.headless:
+            preview = MjpegPreview(args.mjpeg_port)
+        else:
+            cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
         interval = 1.0 / args.inference_hz
         next_inference = 0.0
         detections: list[dict] = []
@@ -223,13 +320,14 @@ def main() -> int:
                 )
                 inference_ms = (time.perf_counter() - started) * 1000.0
                 next_inference = now + interval
-            cv2.imshow(
-                WINDOW_NAME,
-                draw_live_overlay(frame, detections, inference_ms),
-            )
-            key = cv2.waitKey(1) & 0xFF
-            if key in (ord("q"), 27):
-                break
+            overlay = draw_live_overlay(frame, detections, inference_ms)
+            if preview is not None:
+                preview.publish(overlay)
+            else:
+                cv2.imshow(WINDOW_NAME, overlay)
+                key = cv2.waitKey(1) & 0xFF
+                if key in (ord("q"), 27):
+                    break
         print(f"{STATUS} motion_authorized=false")
         return 0
     except KeyboardInterrupt:
@@ -241,7 +339,10 @@ def main() -> int:
     finally:
         if capture is not None:
             capture.release()
-        cv2.destroyAllWindows()
+        if preview is not None:
+            preview.close()
+        if not args.headless:
+            cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ from launch_ros.substitutions import FindPackageShare
 
 
 CAN_HOLDOUT_MANIFEST_SHA256 = (
-    "01d2b08c7526f707969f1a9d60736b064f55910c6c283fcb271a5b6a9b7fd936"
+    "9a121142065dabcd780f466ced97efeea68b3e4c1b7514ffb638fdbfad8a51fd"
 )
 
 
@@ -52,7 +52,10 @@ def generate_launch_description():
             Node(
                 package="so101_top_perception",
                 executable="top_object_pose_node",
-                name="top_can_object_pose",
+                # Keep this name aligned with the top_object_pose key in
+                # config/top_perception.yaml so the shared detector safety
+                # parameters are actually applied.
+                name="top_object_pose",
                 output="screen",
                 prefix=[LaunchConfiguration("python_executable")],
                 parameters=[

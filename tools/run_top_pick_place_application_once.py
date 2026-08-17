@@ -598,6 +598,8 @@ def finite_request(start, target):
 def continuous_finite_request(
     start: tuple[float, ...],
     targets: list[tuple[float, ...]],
+    *,
+    owner: str = OWNER,
 ):
     if not targets:
         raise RuntimeError("continuous finite route requires a target")
@@ -636,7 +638,7 @@ def continuous_finite_request(
         points.append(trajectory_point(targets[-1], offset_ms))
     request = BimanualStreamCommand.Request()
     request.operation = BimanualStreamCommand.Request.START_FINITE
-    request.owner = OWNER
+    request.owner = owner
     request.joint_names = list(CANONICAL_JOINTS)
     request.points = points
     return request
@@ -704,6 +706,7 @@ def wait_until_ready(
     *,
     epoch: int,
     timeout_s: float,
+    owner: str = OWNER,
 ):
     deadline = time.monotonic() + timeout_s
     history = []
@@ -712,7 +715,7 @@ def wait_until_ready(
         history.append(document)
         if (
             document.get("state") == "ready"
-            and document.get("owner") == OWNER
+            and document.get("owner") == owner
             and document.get("arbiter_epoch") == epoch
         ):
             if "prepared_positions_rad" in document:
@@ -781,9 +784,13 @@ def wait_until_ready(
 
 
 def stop_request():
+    return stop_request_for_owner(OWNER)
+
+
+def stop_request_for_owner(owner: str):
     request = BimanualStreamCommand.Request()
     request.operation = BimanualStreamCommand.Request.STOP
-    request.owner = OWNER
+    request.owner = owner
     return request
 
 

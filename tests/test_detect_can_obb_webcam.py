@@ -31,3 +31,12 @@ def test_draw_live_overlay_preserves_frame_shape():
 
     assert output.shape == frame.shape
     assert np.any(output != frame)
+
+
+def test_headless_preview_contract_avoids_highgui():
+    source = MODULE_PATH.read_text(encoding="utf-8")
+    assert 'parser.add_argument("--mjpeg-port", type=int, default=8090)' in source
+    assert "if args.headless:" in source
+    assert 'ThreadingHTTPServer(("0.0.0.0", port), Handler)' in source
+    assert "pen_class_id=" not in source
+    assert "target_class_id=" not in source

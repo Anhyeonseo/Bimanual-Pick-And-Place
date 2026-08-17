@@ -13,7 +13,6 @@ from typing import Any
 
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import JointState
 from so101_interfaces.srv import BimanualStreamCommand
 from std_srvs.srv import Trigger
 from trajectory_msgs.msg import JointTrajectoryPoint
@@ -23,14 +22,16 @@ from single_arm_bridge.bimanual_stream_adapter import CANONICAL_JOINT_NAMES
 
 STATUS_SERVICE = "/bimanual_stream_adapter/status"
 COMMAND_SERVICE = "/bimanual_stream_adapter/command"
-FEEDBACK_TOPIC = "/bimanual_stream_adapter/joint_states"
 OWNER = "can_gripper_commissioning"
 CONFIRMATION = "COMMISSION_CAN_GRIPPER_PROBE_ONCE"
 RAW_STEP_RAD = 2.0 * math.pi / 4096.0
 SAMPLE_PERIOD_MS = 50
 FIRST_POINT_MS = 80
 PROBE_MINIMUM_RAW = 1948
-PROBE_MAXIMUM_RAW = 2009
+# The left gripper's operator-confirmed task-open checkpoint is raw 3257.
+# Raw increases monotonically in the opening direction; raw 2009 is only the
+# legacy release command and is not wide enough for the largest task object.
+PROBE_MAXIMUM_RAW = 3257
 GRIPPER_INDICES = {"left": 5, "right": 11}
 ARM_INDICES = tuple(index for index in range(12) if index not in (5, 11))
 ARM_MOTION_LIMIT_RAD = 0.02
@@ -163,25 +164,16 @@ def status_document(node: Node, client: Any, timeout_s: float) -> dict[str, Any]
     return document
 
 
-def wait_feedback(
-    node: Node,
-    storage: list[JointState],
-    timeout_s: float,
-) -> JointState:
-    storage.clear()
-    deadline = time.monotonic() + timeout_s
-    while not storage and time.monotonic() < deadline:
-        rclpy.spin_once(node, timeout_sec=0.1)
-    if not storage:
-        raise RuntimeError(f"timeout waiting for {FEEDBACK_TOPIC}")
-    message = storage[-1]
+def prepared_positions(document: dict[str, Any]) -> tuple[float, ...]:
+    values = document.get("prepared_positions_rad")
     if (
-        tuple(message.name) != CANONICAL_JOINT_NAMES
-        or len(message.position) != 12
-        or not all(math.isfinite(value) for value in message.position)
+        not isinstance(values, list)
+        or len(values) != len(CANONICAL_JOINT_NAMES)
+        or not all(isinstance(value, (int, float)) for value in values)
+        or not all(math.isfinite(float(value)) for value in values)
     ):
-        raise RuntimeError("resident joint feedback is invalid")
-    return message
+        raise RuntimeError("resident status has invalid prepared positions")
+    return tuple(float(value) for value in values)
 
 
 def wait_until_ready(
@@ -220,8 +212,6 @@ def main() -> int:
     args = parse_args()
     rclpy.init()
     node = Node("commission_can_gripper_probe_once")
-    feedback: list[JointState] = []
-    node.create_subscription(JointState, FEEDBACK_TOPIC, feedback.append, 1)
     status_client = node.create_client(Trigger, STATUS_SERVICE)
     command_client = node.create_client(BimanualStreamCommand, COMMAND_SERVICE)
     request_sent = False
@@ -245,8 +235,7 @@ def main() -> int:
         ):
             raise RuntimeError(f"unexpected initial resident state: {initial}")
 
-        before_message = wait_feedback(node, feedback, args.timeout_s)
-        before = tuple(float(value) for value in before_message.position)
+        before = prepared_positions(initial)
         target = target_positions(before, args.side, args.target_raw)
         expected_epoch = int(initial["arbiter_epoch"]) + 1
 
@@ -277,8 +266,7 @@ def main() -> int:
             expected_epoch,
             args.timeout_s,
         )
-        after_message = wait_feedback(node, feedback, args.timeout_s)
-        after = tuple(float(value) for value in after_message.position)
+        after = prepared_positions(history[-1])
         arm_motion = max(abs(after[index] - before[index]) for index in ARM_INDICES)
         if arm_motion > ARM_MOTION_LIMIT_RAD:
             raise RuntimeError(

@@ -58,6 +58,6 @@ sources:
   camera_info_sha256: dd7297be6e78d02721cb39915f8fe728ca44ac8d9e6a28167ab8c297d1a43936
   table_base_validation_sha256: 084c12ee8565393a2f285721e3dfd97a2c0a35821441aa7279c92aa342a0cda9
   homography_config_sha256: e5c1678196a64b70b0bb64196b9cabef88aa08787f34f02391215f3b2dac18b7
-required_next_gate: measured 44 mm gripper raw mapping, fresh can target lock,
-  orientation-aware MoveIt plan, and hardware commissioning; this file never
-  authorizes motion
+required_next_gate: fresh can target lock, orientation-aware MoveIt plan, and
+  bounded contact-hold hardware commissioning using measured open raw 2500 and
+  grasp raw 2285; this file never authorizes motion

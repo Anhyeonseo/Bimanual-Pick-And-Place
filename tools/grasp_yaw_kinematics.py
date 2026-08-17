@@ -194,6 +194,28 @@ class GraspYawKinematics:
             point - root_from_base_translation
         )
 
+    def vector_in_base_frame(
+        self,
+        vector_in_root: np.ndarray,
+        root_link: str = "workcell_base_link",
+    ) -> np.ndarray:
+        """Rotate one root-frame direction vector into the arm base frame."""
+        vector = np.asarray(vector_in_root, dtype=float)
+        if vector.shape != (3,) or not np.all(np.isfinite(vector)):
+            raise ValueError("vector_in_root must be one finite XYZ vector")
+        norm = np.linalg.norm(vector)
+        if norm < 1.0e-9:
+            raise ValueError("vector_in_root must be non-zero")
+        chain = self._build_chain(root_link, f"{self.prefix}base_link")
+        root_from_base_rotation, _ = self._compose(chain, {})
+        return root_from_base_rotation.T @ (vector / norm)
+
+    def approach_axis(self, positions: dict[str, float]) -> np.ndarray:
+        """Return the unit gripper approach axis in the arm base frame."""
+        rotation = self.gripper_rotation(positions)
+        approach = rotation @ np.array([0.0, 0.0, -1.0])
+        return approach / np.linalg.norm(approach)
+
     def tcp_error_m(
         self,
         commanded: dict[str, float],
@@ -214,7 +236,7 @@ class GraspYawKinematics:
         """
         rotation = self.gripper_rotation(positions)
         jaw_axis = rotation @ self._jaw_axis_in_gripper
-        approach = rotation @ np.array([0.0, 0.0, -1.0])
+        approach = self.approach_axis(positions)
         finger = np.cross(jaw_axis, approach)
         norm = np.linalg.norm(finger)
         if norm < 1.0e-9:

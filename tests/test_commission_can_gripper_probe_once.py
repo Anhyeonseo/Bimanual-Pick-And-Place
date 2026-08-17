@@ -20,7 +20,7 @@ sys.modules[SPEC.name] = PROBE
 SPEC.loader.exec_module(PROBE)
 
 
-@pytest.mark.parametrize("raw", [1948, 1960, 1980, 2000, 2009])
+@pytest.mark.parametrize("raw", [1948, 1960, 1980, 2000, 2009, 2500, 3257])
 def test_semantic_gripper_conversion_round_trips(raw: int) -> None:
     assert PROBE.semantic_rad_to_raw(PROBE.semantic_raw_to_rad(raw)) == raw
 
@@ -49,6 +49,8 @@ def test_target_positions_change_only_selected_grippers(
 def test_target_positions_rejects_unbounded_probe() -> None:
     with pytest.raises(ValueError, match="bounded probe"):
         PROBE.target_positions((0.0,) * 12, "left", 1947)
+    with pytest.raises(ValueError, match="bounded probe"):
+        PROBE.target_positions((0.0,) * 12, "left", 3258)
 
 
 def test_probe_interpolation_densely_fills_initial_lead_window() -> None:
@@ -69,5 +71,13 @@ def test_probe_contract_is_one_shot_and_fail_closed() -> None:
     assert "automatic_retry_count" in source
     assert "ARM_MOTION_LIMIT_RAD" in source
     assert "BimanualStreamCommand.Request.STOP" in source
+    assert 'document.get("prepared_positions_rad")' in source
     assert "serial.Serial" not in source
     assert "/dev/tty" not in source
+
+
+def test_prepared_positions_validates_status_snapshot() -> None:
+    values = [index / 10.0 for index in range(12)]
+    assert PROBE.prepared_positions({"prepared_positions_rad": values}) == tuple(values)
+    with pytest.raises(RuntimeError, match="invalid prepared positions"):
+        PROBE.prepared_positions({"prepared_positions_rad": values[:-1]})

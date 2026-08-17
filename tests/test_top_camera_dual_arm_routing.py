@@ -99,7 +99,8 @@ def test_dynamic_planner_routes_by_pixels_and_remains_plan_only() -> None:
     assert "select_arm_for_pixel" in source
     assert 'f"{side}_arm"' in source
     assert 'f"{side}_gripper_frame_link"' in source
-    assert '"nonselected_arm_behavior": "hold_bimanual_q0"' in source
+    assert '"hold_current_pose"' in source
+    assert '"hold_bimanual_q0"' in source
     assert "workspace_coordinates_for_arm" in source
     assert "GraspYawKinematics" in source
     assert "point_in_base_frame" in source
@@ -110,10 +111,12 @@ def test_dynamic_planner_routes_by_pixels_and_remains_plan_only() -> None:
     assert "locked_wrist_roll = 0.0" in source
     assert '"wrist_roll_yaw_correction_applied": False' in source
     assert '"wrist_roll_policy": "hold_bimanual_q0"' in source
-    assert '"schema_version": 13 if profile.name == "can" else 12' in source
+    assert '"schema_version": 17 if profile.name == "can" else 12' in source
+    assert "CAN_TOP_DOWN_TILT_BOUND_RAD" in source
+    assert "kinematics.approach_axis(positions)" in source
     assert 'CAN_TARGET_TOPIC = "/perception/top/can_obb/object_pose_board"' in source
     assert '"solve_can_crossing_yaw"' in source
-    assert '"hold_can_at_pick_lift_with_gripper_closed"' in source
+    assert '"bounded_hold_at_pick_lift_release_required_within_5s"' in source
     assert "BASELINE_PICK_GRASP_OFFSET_M = 0.011" in source
     assert "PREVIOUS_PICK_GRASP_OFFSET_M = 0.002" in source
     assert "PICK_GRASP_OFFSET_M = -0.001" in source
@@ -122,6 +125,10 @@ def test_dynamic_planner_routes_by_pixels_and_remains_plan_only() -> None:
     assert "DYNAMIC_PICK_HEIGHT_OFFSET_PASS" in source
     assert "GRIPPER_OPEN_TARGET_RAW = 2048" in source
     assert "GRIPPER_CLOSE_TARGET_RAW = 1948" in source
+    assert "CAN_GRIPPER_OPEN_TARGET_RAW = 2500" in source
+    assert "CAN_GRIPPER_CLOSE_TARGET_RAW = 2285" in source
+    assert "CAN_MAXIMUM_UNMONITORED_CONTACT_HOLD_S = 5.0" in source
+    assert '"release_on_hold_timeout_required": profile.name == "can"' in source
     assert '"phase": "pick_open"' in source
     assert '"gripper_contract"' in source
     assert "DYNAMIC_PICK_GRIPPER_CONTRACT_PASS" in source
@@ -264,9 +271,16 @@ def test_can_profile_uses_can_topic_height_and_pick_only_steps() -> None:
         {"name": "pick_pregrasp_to_grasp", "segments": [segment]},
         {"name": "pick_grasp_to_lift", "segments": [segment]},
     ]
-    close_rad = (2048 - 1900) * planner.RAW_STEP_RAD
+    open_rad = (
+        2048 - planner.CAN_GRIPPER_OPEN_TARGET_RAW
+    ) * planner.RAW_STEP_RAD
+    close_rad = (
+        2048 - planner.CAN_GRIPPER_CLOSE_TARGET_RAW
+    ) * planner.RAW_STEP_RAD
     steps = planner.steps_from_phases(
-        phases, gripper_close_rad=close_rad
+        phases,
+        gripper_open_rad=open_rad,
+        gripper_close_rad=close_rad,
     )
     assert [step["phase"] for step in steps] == [
         "pick_open",
@@ -275,8 +289,53 @@ def test_can_profile_uses_can_topic_height_and_pick_only_steps() -> None:
         "pick_close",
         "pick_grasp_to_lift",
     ]
+    assert steps[0]["target_position_rad"] == pytest.approx(open_rad)
     assert steps[-2]["target_position_rad"] == pytest.approx(close_rad)
     assert all(not step["phase"].startswith("place") for step in steps)
+
+
+def test_can_profile_defaults_to_exact_commissioned_gripper_target(
+    monkeypatch,
+) -> None:
+    path = ROOT / "tools/plan_top_camera_pick_place_once.py"
+    spec = importlib.util.spec_from_file_location(
+        "plan_top_camera_can_gripper_contract_test", path
+    )
+    planner = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = planner
+    spec.loader.exec_module(planner)
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            str(path),
+            "--plan-only",
+            "--object-profile",
+            "can",
+            "--task",
+            "pick-only",
+        ],
+    )
+    args = planner.parse_args()
+    assert args.can_gripper_close_raw == 2285
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            str(path),
+            "--plan-only",
+            "--object-profile",
+            "can",
+            "--task",
+            "pick-only",
+            "--can-gripper-close-raw",
+            "2280",
+        ],
+    )
+    with pytest.raises(SystemExit):
+        planner.parse_args()
 
 
 def test_can_endpoint_solver_enforces_perpendicular_jaw_yaw() -> None:
@@ -296,6 +355,10 @@ def test_can_endpoint_solver_enforces_perpendicular_jaw_yaw() -> None:
             assert root_link == "workcell_base_link"
             return np.asarray(point, dtype=float)
 
+        def vector_in_base_frame(self, vector, root_link):
+            assert root_link == "workcell_base_link"
+            return np.asarray(vector, dtype=float)
+
         def tcp_position(self, positions):
             return np.array(
                 [positions[name] for name in joint_names[:3]], dtype=float
@@ -303,6 +366,9 @@ def test_can_endpoint_solver_enforces_perpendicular_jaw_yaw() -> None:
 
         def finger_yaw(self, positions):
             return float(positions["roll"])
+
+        def approach_axis(self, positions):
+            return np.array([0.0, 0.0, -1.0])
 
         def solve_wrist_roll(self, positions, target, lower, upper):
             solved = planner.wrap_half_turn(target)
@@ -322,6 +388,7 @@ def test_can_endpoint_solver_enforces_perpendicular_jaw_yaw() -> None:
         np.array([-3.0] * 5),
         np.array([3.0] * 5),
     )
+    assert result["approach_tilt_rad"] == pytest.approx(0.0)
 
     assert result["position_residual_m"] < 1.0e-9
     assert result["crossing_residual_rad"] < 1.0e-9
