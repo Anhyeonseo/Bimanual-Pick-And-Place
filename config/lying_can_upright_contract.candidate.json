@@ -10,7 +10,7 @@
     "maximum_frame_age_s": 0.2,
     "minimum_confidence": null,
     "minimum_aspect_ratio": null,
-    "expected_length_m": 0.13244,
+    "expected_length_m": 0.12244,
     "expected_diameter_m": 0.053,
     "length_tolerance_m": null,
     "diameter_tolerance_m": null,
@@ -20,7 +20,7 @@
     "physical_measurement_evidence": {
       "recorded_date": "2026-08-15",
       "source": "operator_reported_physical_measurement",
-      "length_mm": 132.44,
+      "length_mm": 122.44,
       "diameter_mm": 53.0,
       "mass_g": 13.0,
       "tolerances_commissioned": false

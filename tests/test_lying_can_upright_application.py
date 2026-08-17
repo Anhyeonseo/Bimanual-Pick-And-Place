@@ -176,7 +176,7 @@ def test_candidate_contract_is_explicitly_uncommissioned() -> None:
     )
     assert contract["status"] == "COMMISSIONING_REQUIRED"
     assert contract["motion_authorized"] is False
-    assert contract["perception"]["expected_length_m"] == 0.13244
+    assert contract["perception"]["expected_length_m"] == 0.12244
     assert contract["perception"]["expected_diameter_m"] == 0.053
     assert (
         contract["perception"]["physical_measurement_evidence"]["mass_g"]
