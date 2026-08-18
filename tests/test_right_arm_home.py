@@ -8,7 +8,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PATH = ROOT / "tools" / "right_arm_home.py"
+PATH = ROOT / "tools" / "setup/right_arm/right_arm_home.py"
 SPEC = importlib.util.spec_from_file_location("right_arm_home", PATH)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)

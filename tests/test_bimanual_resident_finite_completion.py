@@ -119,23 +119,23 @@ def test_resident_host_contract_requires_finite_completion_firmware() -> None:
         "bimanual_stream_node.py"
     )
     no_motion = text(
-        ROOT / "tools/validate_resident_bimanual_adapter_no_motion.py"
+        ROOT / "tools/setup/resident_gate/validate_resident_bimanual_adapter_no_motion.py"
     )
     hold = text(
-        ROOT / "tools/execute_resident_bimanual_current_pose_hold_twice.py"
+        ROOT / "tools/setup/resident_gate/execute_resident_bimanual_current_pose_hold_twice.py"
     )
     roundtrip = text(
         ROOT
-        / "tools/execute_resident_bimanual_base_small_roundtrip_once.py"
+        / "tools/contract_evidence/execute_resident_bimanual_base_small_roundtrip_once.py"
     )
     rolling = text(
         ROOT
-        / "tools/execute_resident_bimanual_rolling_horizon_no_motion_once.py"
+        / "tools/contract_evidence/execute_resident_bimanual_rolling_horizon_no_motion_once.py"
     )
     rolling_motion = text(
         ROOT
         / "tools/"
-        "execute_resident_bimanual_rolling_base_small_roundtrip_once.py"
+        "contract_evidence/execute_resident_bimanual_rolling_base_small_roundtrip_once.py"
     )
     assert "F8_FIRMWARE_VERSION = 0x00024809" in adapter
     assert "F8_FIRMWARE_VERSION" in node

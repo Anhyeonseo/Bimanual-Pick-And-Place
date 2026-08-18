@@ -4,7 +4,7 @@ import re
 import unittest
 
 import yaml
-from tools.joint_calibration import (
+from tools.lib.joint_calibration import (
     CalibrationError,
     calibration_hash,
     load_calibration,

@@ -23,7 +23,7 @@ CONFIG = (FIRMWARE / "Core/Inc/single_arm_config.h").read_text()
 BUS = (FIRMWARE / "Core/Src/right_servo_bus.c").read_text()
 BINARY = (FIRMWARE / "Core/Src/binary_control.c").read_text()
 TRANSPORT = (PACKAGE / "single_arm_bridge/transport.py").read_text()
-TOOL = (ROOT / "tools/capture_right_arm_configuration_read_only.py").read_text()
+TOOL = (ROOT / "tools/setup/right_arm/capture_right_arm_configuration_read_only.py").read_text()
 
 
 def test_configuration_wire_schema_round_trips_all_fields() -> None:

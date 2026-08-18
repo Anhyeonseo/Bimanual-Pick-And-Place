@@ -59,12 +59,12 @@ py -3.12 -m venv .venv-host
 .\.venv-host\Scripts\Activate.ps1
 python -m pip install -r requirements/host.txt
 python -m unittest discover -s tests -p "test_*.py"
-python tools\validate_protocol_manifest.py
+python tools\run\validate_protocol_manifest.py
 ```
 
 STM32CubeIDE에서는 `firmware/stm32_g474_single_arm`을 Existing Project로 import한다. 상위의 `firmware/stm32_actuator`가 linked resource로 연결되므로 두 디렉터리의 상대 위치를 바꾸지 않는다. `Debug/` 산출물과 개인별 `.launch` 설정은 저장소에 포함하지 않으며 각 PC에서 다시 생성한다.
 
-실제 모터를 사용하는 기본 점검(smoke) 및 동작 시험 도구는 `tools/stm32_*_test.py`에 있다. 전원 차단 수단과 작업 공간을 확보한 뒤 실행한다.
+실제 모터를 사용하는 기본 점검(smoke) 및 동작 시험 도구는 `tools/setup/stm32/stm32_*_test.py`에 있다. 전원 차단 수단과 작업 공간을 확보한 뒤 실행한다.
 
 ## 공식 MoveIt bringup
 
@@ -168,8 +168,8 @@ Manipulation/
 
 ```bash
 python3 -m unittest discover -s tests -v
-python3 tools/validate_protocol_manifest.py
-python3 tools/validate_camera_schedule.py
+python3 tools/run/validate_protocol_manifest.py
+python3 tools/run/validate_camera_schedule.py
 ```
 
 Pi에서 ROS package까지 확인할 때는 다음을 추가로 실행한다.

@@ -13,7 +13,7 @@ TOOLS = Path(__file__).resolve().parents[1] / "tools"
 sys.path.insert(0, str(TOOLS))
 SPEC = importlib.util.spec_from_file_location(
     "solve_top_eye_to_hand",
-    TOOLS / "solve_top_eye_to_hand.py",
+    TOOLS / "setup/camera_calibration/solve_top_eye_to_hand.py",
 )
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None

@@ -10,7 +10,7 @@ import yaml
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
 SPEC = importlib.util.spec_from_file_location(
     "assemble_top_eye_to_hand_session",
-    TOOLS / "assemble_top_eye_to_hand_session.py",
+    TOOLS / "setup/camera_calibration/assemble_top_eye_to_hand_session.py",
 )
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None

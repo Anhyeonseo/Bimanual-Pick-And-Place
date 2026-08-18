@@ -128,7 +128,7 @@ export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 source /opt/ros/jazzy/setup.bash
 source ros2_ws/install/setup.bash
 
-python3 tools/plan_top_camera_pick_place_once.py   --plan-only   --routing-deadband-px 40   --output artifacts/top_pick_place/2026-08-14/dynamic_plan_run01.json
+python3 tools/run/plan_top_camera_pick_place_once.py   --plan-only   --routing-deadband-px 40   --output artifacts/top_pick_place/2026-08-14/dynamic_plan_run01.json
 ```
 
 성공 출력에는 `selected_arm=left` 또는 `selected_arm=right`, 픽셀 x/영상 폭,
@@ -167,7 +167,7 @@ TCP xyz를 맞춘다. 물체 yaw는 진단값이며 펜 실행 조건으로 강�
 plan-only 출력의 SHA-256을 그대로 넣는다.
 
 ```bash
-python3 tools/run_top_pick_place_application_once.py   --validate-only   --plan artifacts/top_pick_place/2026-08-14/dynamic_plan_run01.json   --plan-sha256 <PLAN_SHA256>   --output artifacts/top_pick_place/2026-08-14/validate_run01.json
+python3 tools/run/run_top_pick_place_application_once.py   --validate-only   --plan artifacts/top_pick_place/2026-08-14/dynamic_plan_run01.json   --plan-sha256 <PLAN_SHA256>   --output artifacts/top_pick_place/2026-08-14/validate_run01.json
 ```
 
 `TOP_PICK_PLACE_DYNAMIC_VALIDATE_ONLY_PASS motion_commands=0 resident_services_called=0`가

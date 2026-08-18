@@ -10,7 +10,7 @@ from tests import test_top_pen_detection_baseline as fixtures
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE_PATH = ROOT / "tools" / "evaluate_top_pen_yolo_obb.py"
+MODULE_PATH = ROOT / "tools" / "setup/pen_detector_training/evaluate_top_pen_yolo_obb.py"
 SPEC = importlib.util.spec_from_file_location(
     "evaluate_top_pen_yolo_obb",
     MODULE_PATH,

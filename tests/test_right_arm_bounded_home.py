@@ -7,7 +7,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOL_PATH = ROOT / "tools/execute_right_arm_bounded_home_once.py"
+TOOL_PATH = ROOT / "tools/setup/right_arm/execute_right_arm_bounded_home_once.py"
 SPEC = spec_from_file_location("right_arm_bounded_home", TOOL_PATH)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = module_from_spec(SPEC)

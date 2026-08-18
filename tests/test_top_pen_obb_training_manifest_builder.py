@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE_PATH = ROOT / "tools" / "build_top_pen_obb_training_manifest.py"
+MODULE_PATH = ROOT / "tools" / "setup/pen_detector_training/build_top_pen_obb_training_manifest.py"
 SPEC = importlib.util.spec_from_file_location(
     "build_top_pen_obb_training_manifest",
     MODULE_PATH,

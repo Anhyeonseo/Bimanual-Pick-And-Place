@@ -1063,7 +1063,7 @@ append/splice 연속성을 검사할 최소 timeline만 보존하며 executable 
 ### 9.2 버전 정책
 
 v1/v2 동시 지원은 하지 않는다. 단일 사용자 시스템이고
-`tools/validate_protocol_manifest.py` + 생성 헤더가 host/firmware 동기를
+`tools/run/validate_protocol_manifest.py` + 생성 헤더가 host/firmware 동기를
 강제하므로 lockstep 이관이 더 싸다. HELLO 응답의 version 불일치는 fail-closed.
 
 ### 9.3 queue 구조 — 팔별 2개가 아니라 12관절 1개 (2026-08-11 정정)

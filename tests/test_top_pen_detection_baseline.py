@@ -11,7 +11,7 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE_PATH = ROOT / "tools" / "evaluate_top_pen_detection_baseline.py"
+MODULE_PATH = ROOT / "tools" / "setup/pen_detector_training/evaluate_top_pen_detection_baseline.py"
 SPEC = importlib.util.spec_from_file_location(
     "evaluate_top_pen_detection_baseline",
     MODULE_PATH,

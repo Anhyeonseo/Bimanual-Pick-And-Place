@@ -10,8 +10,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-CORE_PATH = ROOT / "tools" / "top_pick_place_application.py"
-RUNNER_PATH = ROOT / "tools" / "run_top_pick_place_application_once.py"
+CORE_PATH = ROOT / "tools" / "lib/top_pick_place_application.py"
+RUNNER_PATH = ROOT / "tools" / "run/run_top_pick_place_application_once.py"
 spec = importlib.util.spec_from_file_location("top_pick_place_application", CORE_PATH)
 APP = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = APP
@@ -286,7 +286,7 @@ def test_runtime_requires_the_reviewed_third_three_mm_lower_grasp() -> None:
 
 def test_each_arm_plan_requires_operator_screen_lateral_correction() -> None:
     planner_source = (
-        ROOT / "tools/plan_top_camera_pick_place_once.py"
+        ROOT / "tools/run/plan_top_camera_pick_place_once.py"
     ).read_text(encoding="utf-8")
     assert "LEFT_SCREEN_X_CORRECTION_M = 0.01372" in planner_source
     assert "RIGHT_SCREEN_X_CORRECTION_M = -0.02947" in planner_source
@@ -318,7 +318,7 @@ def test_runtime_requires_the_deeper_reviewed_gripper_target() -> None:
 
 def test_resident_right_q0_tool_holds_other_axes_and_fails_closed() -> None:
     source = (
-        ROOT / "tools" / "execute_resident_right_arm_q0_once.py"
+        ROOT / "tools" / "contract_evidence/execute_resident_right_arm_q0_once.py"
     ).read_text(encoding="utf-8")
     assert "RIGHT_ARM_INDICES = (6, 7, 8, 9, 10)" in source
     assert "MAXIMUM_SUBLEG_DELTA_RAD = 0.075" in source

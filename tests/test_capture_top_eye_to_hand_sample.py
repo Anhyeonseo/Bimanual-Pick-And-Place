@@ -11,7 +11,7 @@ import numpy as np
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
 SPEC = importlib.util.spec_from_file_location(
     "capture_top_eye_to_hand_sample",
-    TOOLS / "capture_top_eye_to_hand_sample.py",
+    TOOLS / "setup/camera_calibration/capture_top_eye_to_hand_sample.py",
 )
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -64,7 +64,7 @@ class CaptureTopEyeToHandSampleTest(unittest.TestCase):
     def test_generated_gridboard_is_recognized_only_when_complete(self):
         generator_spec = importlib.util.spec_from_file_location(
             "generate_top_eye_to_hand_gridboard_for_capture_test",
-            TOOLS / "generate_top_eye_to_hand_gridboard.py",
+            TOOLS / "setup/camera_calibration/generate_top_eye_to_hand_gridboard.py",
         )
         generator = importlib.util.module_from_spec(generator_spec)
         assert generator_spec.loader is not None
@@ -122,7 +122,7 @@ class CaptureTopEyeToHandSampleTest(unittest.TestCase):
         self.assertAlmostEqual(np.rad2deg(rotation_span), 0.5)
 
     def test_visual_stability_defaults_are_fail_closed(self):
-        source = (TOOLS / "capture_top_eye_to_hand_sample.py").read_text()
+        source = (TOOLS / "setup/camera_calibration/capture_top_eye_to_hand_sample.py").read_text()
         self.assertIn('"--max-pnp-rms-px", type=float, default=1.5', source)
         self.assertIn('"--max-target-translation-span-mm"', source)
         self.assertIn('"--max-target-rotation-span-deg"', source)

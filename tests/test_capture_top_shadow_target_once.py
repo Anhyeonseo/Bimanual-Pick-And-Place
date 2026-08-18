@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 _spec = importlib.util.spec_from_file_location(
     "capture_top_shadow_target_once",
-    ROOT / "tools" / "capture_top_shadow_target_once.py",
+    ROOT / "tools" / "diagnostics/capture_top_shadow_target_once.py",
 )
 MODULE = importlib.util.module_from_spec(_spec)
 sys.modules["capture_top_shadow_target_once"] = MODULE
@@ -89,7 +89,7 @@ def test_promotion_never_authorizes_motion_by_itself() -> None:
     assert document["motion_authorized"] is False
     assert "operator approves" in document["promotion_gate"]
     source = (
-        ROOT / "tools" / "capture_top_shadow_target_once.py"
+        ROOT / "tools" / "diagnostics/capture_top_shadow_target_once.py"
     ).read_text(encoding="utf-8")
     # 동작 API 를 쓰지 않는다.
     for forbidden in ("ActionClient", "send_goal", "FollowJointTrajectory"):

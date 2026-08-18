@@ -83,13 +83,13 @@ STM32와 ROS 코드를 작성하기 전에 두 SO-ARM101의 실제 서보 구성
 측정값은 `hardware/phase0_baseline.json`에도 입력한다. 오른팔만 먼저 측정한 경우 다음 명령으로 오른팔 게이트만 판정한다.
 
 ```bash
-python3 tools/validate_phase0.py --arm right
+python3 tools/setup/firmware/validate_phase0.py --arm right
 ```
 
 양팔 측정 완료 후 전체 게이트를 판정한다.
 
 ```bash
-python3 tools/validate_phase0.py --arm all
+python3 tools/setup/firmware/validate_phase0.py --arm all
 ```
 
 파일에 `null`이 남아 있거나, 관절 이름이 중복되거나, raw 현재 위치가 기록된 안전 범위를 벗어나거나, fault 항목이 안전 상태와 모순되면 검증기는 실패해야 한다. 측정 전 실패는 정상이며 임의의 값으로 통과시키지 않는다.

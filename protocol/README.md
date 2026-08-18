@@ -50,7 +50,7 @@ CRC가 맞더라도 magic, version, type, length 또는 현재 MCU 상태가 올
 
 session/state_control/motion(레거시)/feedback 범위(1~63)는
 `protocol/message_ids.json`이 기계가 읽을 수 있는 단일 소스이고
-`tools/generate_protocol_header.py`가 여기서 C 헤더를 생성한다. **v2 stream
+`tools/setup/firmware/generate_protocol_header.py`가 여기서 C 헤더를 생성한다. **v2 stream
 메시지(40~47, 58~62)는 이 manifest에 없다** — `firmware/stm32_actuator/include/actuator_core/stream_contract_v2.h`(C)와
 `ros2_ws/src/single_arm_bridge/single_arm_bridge/stream_protocol_v2.py`(Python)에
 직접 손으로 정의돼 있고 서로 대조하는 생성기가 없다. 이 표는 두 소스를 합친
@@ -409,7 +409,7 @@ Serial message 이름으로 `ESTOP`을 사용하지 않는다. Software packet�
 구현 전 확인:
 
 ~~~bash
-python3 tools/validate_protocol_manifest.py
+python3 tools/run/validate_protocol_manifest.py
 ~~~
 
 펌웨어 단계 확인:

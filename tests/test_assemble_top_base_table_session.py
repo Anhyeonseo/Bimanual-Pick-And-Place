@@ -9,7 +9,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE_PATH = ROOT / "tools" / "assemble_top_base_table_session.py"
+MODULE_PATH = ROOT / "tools" / "setup/camera_calibration/assemble_top_base_table_session.py"
 SPEC = importlib.util.spec_from_file_location(
     "assemble_top_base_table_session", MODULE_PATH
 )

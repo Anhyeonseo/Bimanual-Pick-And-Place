@@ -6,7 +6,7 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE_PATH = ROOT / "tools" / "bootstrap_top_pen_obb_labels.py"
+MODULE_PATH = ROOT / "tools" / "setup/pen_detector_training/bootstrap_top_pen_obb_labels.py"
 SPEC = importlib.util.spec_from_file_location("bootstrap_top_pen_obb_labels", MODULE_PATH)
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
