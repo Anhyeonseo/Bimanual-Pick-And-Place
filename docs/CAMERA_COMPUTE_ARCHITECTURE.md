@@ -51,8 +51,7 @@ Raspberry Pi 5 4GB에서 다음 작업을 동시에 수행하되 제어와 안�
 > 여야 함이 실측됐다. C2 에서 파지는 잔차 `10.17 mm` 에서 성립했으므로 이
 > 대역으로는 정상 파지를 개선할 수 없다. 손목 카메라의 실제 역할은
 > **손끝 국소 검증(파지 여부·겹 수)과 국소 기하 측정(edge 각도 → wrist_roll)**
-> 이다. 상세와 근거: `docs/checklists/WRIST_CAMERA_EYE_IN_HAND.md` W4,
-> 최종 목표(수건 접기) 기준 재정리: `docs/PLAN_TOWEL_FOLDING_PERCEPTION.md`.
+> 이다. 상세와 근거: `docs/checklists/WRIST_CAMERA_EYE_IN_HAND.md` W4.
 
 주요 역할:
 
