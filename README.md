@@ -6,11 +6,11 @@ Raspberry Pi 5, ROS 2 Jazzy, STM32G474, 두 대의 SO-ARM101과 세 대의 USB �
 
 ## Demo
 
-  준비되면 아래 주석을 해제한다. 파일은 docs/media/ 에 그대로 넣으면 된다.
-
-  [![데모 영상 (Google Drive)](docs/media/demo-thumbnail.jpg)](구글드라이브_공유링크를_여기에_붙여넣기)
-
   ![pick and place](docs/media/pick-and-place.jpg)
+
+  [![데모 영상 (Google Drive)](docs/media/demo-thumbnail.jpg)](https://drive.google.com/file/d/11hQlSwHRJpI9FFg5H4HPeviVFf3yjjWv/view?usp=drive_link)
+
+
 
 ## 무엇을, 어떻게
 
