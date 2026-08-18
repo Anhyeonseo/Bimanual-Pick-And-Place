@@ -9,6 +9,7 @@ Raspberry Pi 5, ROS 2 Jazzy, STM32G474, 두 대의 SO-ARM101과 세 대의 USB �
   ![pick and place](docs/media/pick-and-place.jpg)
 
   [![데모 영상 (Google Drive)](docs/media/demo-thumbnail.jpg)](https://drive.google.com/file/d/11hQlSwHRJpI9FFg5H4HPeviVFf3yjjWv/view?usp=drive_link)
+  click image to watch demo
 
 
 
