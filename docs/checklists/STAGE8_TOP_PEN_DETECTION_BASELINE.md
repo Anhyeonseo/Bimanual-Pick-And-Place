@@ -39,7 +39,7 @@
 워크스테이션에서 camera manager와 ROS overlay를 source한 뒤 실행한다.
 
 ```bash
-python3 tools/capture_top_frame.py \
+python3 tools/setup/camera_calibration/capture_top_frame.py \
   --output artifacts/stage8/top_pen_dataset/images/positive_001.png
 ```
 
@@ -95,7 +95,7 @@ manifest는 dataset 디렉터리 안에 두며 image 경로는 manifest 기준 �
 ## 평가
 
 ```bash
-python3 tools/evaluate_top_pen_detection_baseline.py \
+python3 tools/setup/pen_detector_training/evaluate_top_pen_detection_baseline.py \
   --manifest artifacts/stage8/top_pen_dataset/manifest.json \
   --contract config/top_pen_detection_baseline_contract.json \
   --camera-info ros2_ws/src/manipulation_camera_manager/config/top_camera_info.yaml \

@@ -65,7 +65,7 @@ physical left-arm rig differs from the official adjustable assembly: only the
 small center tip protruding beyond source-mesh `y=234.4404 mm` is broken and
 absent; both surrounding printed end structures remain. `cam_mount_top` is
 inserted end-for-end over the bottom tower's `y=223.1..230.95 mm` post. The
-modified mesh is reproducible via `tools/generate_overhead_top_hinge_removed.py`.
+modified mesh is reproducible via `tools/setup/firmware/generate_overhead_top_hinge_removed.py`.
 The insertion depth is 7.85 mm and every mount joint is fixed. Following the
 RViz fit checks, `arm_base` keeps its confirmed robot-footprint alignment. The
 complete `cam_mount_bottom` + `cam_mount_top` assembly is rotated 180 degrees

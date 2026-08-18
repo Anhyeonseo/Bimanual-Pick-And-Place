@@ -66,7 +66,7 @@ python3 -m venv --system-site-packages \
   /home/pi/Manipulation/.venv-top-perception-opencv410
 /home/pi/Manipulation/.venv-top-perception-opencv410/bin/python -m pip install \
   --require-hashes --no-deps \
-  -r /home/pi/Manipulation/requirements-top-perception-runtime.txt
+  -r /home/pi/Manipulation/requirements/top-perception-runtime.txt
 
 ros2 launch so101_top_perception top_obb_runtime_smoke.launch.py \
   python_executable:=/home/pi/Manipulation/.venv-top-perception-opencv410/bin/python \

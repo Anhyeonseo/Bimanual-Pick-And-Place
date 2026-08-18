@@ -10,7 +10,7 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE_PATH = ROOT / "tools" / "validate_top_pen_obb_training_dataset.py"
+MODULE_PATH = ROOT / "tools" / "setup/pen_detector_training/validate_top_pen_obb_training_dataset.py"
 SPEC = importlib.util.spec_from_file_location(
     "validate_top_pen_obb_training_dataset",
     MODULE_PATH,

@@ -1,16 +1,90 @@
-# 양팔 펌웨어 아키텍처 — 설계안
+# 양팔 펌웨어 아키텍처
 
-- 기준일: 2026-08-11
-- 대상: `firmware/stm32_g474_single_arm` → 양팔 구조 전환
-- 전제 문서: [FIRMWARE_ASYNC_RATIONALE.md](FIRMWARE_ASYNC_RATIONALE.md),
-  [PLAN_CONVERGENCE_AND_BIMANUAL.md](PLAN_CONVERGENCE_AND_BIMANUAL.md),
-  [ADR-0001](adr/0001-system-partition.md), [ADR-0002](adr/0002-motion-time-ownership.md)
-- 이 문서는 **설계안**이다. 구현 전이며, 각 단계는 자체 gate 로 검증한다.
+- 대상: `firmware/stm32_g474_single_arm` — 양팔 12관절, protocol v2, resident
+  firmware `0x00024809`
+- 전제 문서: [ADR-0001](adr/0001-system-partition.md),
+  [ADR-0002](adr/0002-motion-time-ownership.md)
 
-> **2026-08-11 정정.** 상위 계획은 [PLAN_CONTINUOUS_EXECUTION.md](PLAN_CONTINUOUS_EXECUTION.md)
-> 다. 실측 결과 leg 사이 dead time `33 s` 중 펌웨어 몫은 **약 3 %** 이고
-> 나머지는 host 실행 구조다. 따라서 **host 작업(H1~H3)이 이 문서의 F 단계보다
-> 먼저**다. 이 문서에서 수정된 항목:
+## 현재 아키텍처
+
+### 시스템 구성
+
+STM32G474 한 대가 좌우 팔을 독립 UART로 각각 구동한다.
+
+| 자원 | 배정 |
+|---|---|
+| host 연결 | LPUART1(PA2/PA3), ST-LINK VCP, 921600 baud |
+| 좌 서보 bus | USART1(PC4/PC5) @1 Mbaud → Waveshare Bus Servo Adapter L → STS3215 ID 1~6 |
+| 우 서보 bus | UART4(PC10/PC11) @1 Mbaud → Waveshare Bus Servo Adapter R → STS3215 ID 1~6 |
+| 제어 tick | TIM6 하드웨어 타이머 ISR, 5 ms 주기(단일 hard real-time 소스) |
+| 타임스탬프 | TIM2 32-bit free-running, 5.9 ns 분해능 |
+| watchdog | IWDG, 배경 루프에서만 급여(tick ISR 정지 시 리셋되도록) |
+
+RTOS는 쓰지 않는다 — 관측된 실패는 모두 우선순위 문제가 아니라 blocking I/O였고,
+2계층 시간구동 구조(하드웨어 tick ISR + 협조적 배경 루프)로 충분했다(근거: §1).
+
+### 명령 흐름
+
+```text
+Pi resident adapter (bimanual_stream_adapter)
+  → protocol v2 STREAM_OPEN/SETPOINT_BATCH/SPLICE (12관절, 공통 apply_tick)
+  → STM32 stream_session_v2/stream_executor_v2 큐 (팔별이 아니라 12관절 단일 큐)
+  → TIM6 tick마다 좌우 6축씩 원자 변환 후 두 UART SYNC WRITE를 DMA로 연속 기동
+  → STS3215 서보
+```
+
+12관절이 하나의 큐·하나의 `apply_tick`으로 묶여 있어 "한 팔만 먼저 도착"이
+구조적으로 불가능하다 — skew를 측정해서 줄이는 게 아니라 애초에 발생하지
+않게 만든 것이다(근거: §7). 명령 소스(MoveIt 경로, 상단 애플리케이션 task
+FSM, 학습된 policy 등 무엇이든)는 Pi의 단일 command arbiter가 절대 12축 목표
+하나로 변환한 뒤에만 STM32로 내려온다. STM32는 명령 출처를 전혀 모른다.
+
+### 안전 상태기계
+
+```text
+arm_state[LEFT], arm_state[RIGHT] ∈ {BOOT, SAFE_DISABLED, ARMED, ACTIVE, HOLD, FAULT}
+system_state ∈ {BOOT, STANDBY, READY, RUNNING, COORDINATED_STOP, ESTOP}
+```
+
+한 팔에서 fault가 발생하면 시스템 전체가 `COORDINATED_STOP`으로 수렴한다 —
+두 executor를 즉시 멈추고 두 팔을 **현재 위치에서 토크를 유지한 채 HOLD**한다
+(DISABLE이 아니다: DISABLE은 토크를 끄므로 팔이 떨어진다. 자동 반응은 항상
+HOLD이고 DISABLE은 조작자 명시 명령으로만 도달한다). "한 팔만 계속 움직인다"는
+지원하지 않는다 — 두 팔이 같은 작업을 공유할 수 있으므로 한 팔 정지는 다른
+팔에게도 즉시 위험이기 때문이다. 전체 fault 목록과 반응은 §6.3에 있다.
+
+### 실측 결과
+
+F8.9(`0x00024809`)가 실제 검증한 값:
+
+| 지표 | 결과 |
+|---|---|
+| L/R dispatch skew | p99 < 50 µs (설계 목표), 실측 max 2 µs, launch lateness max 46 µs |
+| feedback freshness | rolling 왕복에서 최대 age 27 ms |
+| terminal tolerance | arm 10축 `46,020 µrad`, gripper 2축 `150,000 µrad`(접촉 허용), firmware hard cap `160,000 µrad` |
+| 실기 검증 | no-motion, current-pose hold 2회, 좌→우 Top-camera 펜 전달 자동 재시도 없이 완주 |
+
+전체 verification evidence는
+[양팔 상단 애플리케이션 인터페이스 §11](BIMANUAL_UPPER_APPLICATION_INTERFACE.md#11-검증된-evidence)에
+SHA-256과 함께 있다.
+
+### 디렉터리
+
+이식 가능한 core는 `firmware/stm32_actuator/`(디렉터리 이름은 단일팔 시절
+그대로), 보드 프로젝트는 `firmware/stm32_g474_single_arm/`(이름도 마찬가지)다.
+자세한 모듈 목록은 [`firmware/stm32_actuator/README.md`](../firmware/stm32_actuator/README.md).
+
+---
+
+## 부록: 설계 및 구현 이력
+
+여기부터는 2026-08-11 원 설계안과 그 이후 구현 과정을 그대로 남긴 기록이다.
+위 "현재 아키텍처"가 결과이고, 아래는 그 결과에 이른 근거·대안 비교·단계별
+gate·버전별 이력이다. 시스템이 왜 이렇게 생겼는지 궁금할 때만 읽으면 된다.
+
+> **2026-08-11 정정.** leg 사이 dead time 실측 결과 펌웨어 몫은 **약 3 %**
+> 이고 나머지는 host 실행 구조였다. 따라서 host 작업(H1~H3)을 이 문서의 F
+> 단계보다 먼저 처리했다. 이 문서에서 수정된 항목:
 > - §3 의 mode enum 2개 → `horizon_end_tick` 필드 1개 + splice (§3.5)
 > - §11 의 baud 상향 → **F2.5 로 앞당김**. 반응 지연의 1차 제약이다
 > - §11 의 F8(STREAMING mode) → 삭제. horizon 필드로 흡수
@@ -24,9 +98,7 @@
 > horizon을 설명하기 위한 역사적 약칭일 뿐 firmware mode나 별도 실행 경로가
 > 아니다.
 
----
-
-## 0. 요약 — 결정 6개
+### 0. 요약 — 결정 6개
 
 | # | 결정 | 근거 |
 |---|---|---|
@@ -40,11 +112,11 @@
 
 ---
 
-## 1. FreeRTOS 판정
+### 1. FreeRTOS 판정
 
 ### 1.1 지금까지의 실패가 무엇이었는가
 
-`FIRMWARE_ASYNC_RATIONALE.md` 가 기록한 3건:
+이전 실패 3건:
 
 | 버전 | 원인 | RTOS 가 고쳤을까 |
 |---|---|---|
@@ -127,7 +199,7 @@ FreeRTOS 는 blocking call 을 non-blocking 으로 바꾸지 않는다. DMA + �
 
 ---
 
-## 2. 전체 구조
+### 2. 전체 구조
 
 ```text
 Raspberry Pi 5
@@ -232,7 +304,7 @@ LPUART1과 충돌하므로 제외한다.
 
 ---
 
-## 3. 명령 추상화 — Track A 와 B 를 하나로
+### 3. 명령 추상화 — Track A 와 B 를 하나로
 
 ### 3.1 관찰
 
@@ -429,7 +501,7 @@ queue 가 비면 마지막 목표를 유지한다 → 감속 후 정지 → 다�
 
 ---
 
-## 3A. 해결 방안
+### 3A. 해결 방안
 
 §3.6 의 5건은 전부 해결 가능하다. A2·A5 는 규율로 두지 않고 **메커니즘**으로
 바꾼다 — 규율은 사람이 잊지만 메커니즘은 잊지 않는다.
@@ -606,7 +678,7 @@ RL 계약이 "관측 stale → reject" 를 요구하므로 **telemetry 에 관�
 
 ---
 
-## 4. 흔들림에 대해 — 정직하게
+### 4. 흔들림에 대해 — 정직하게
 
 `session-2026-08-10` 진단 결론: **q0 근처에서 SHOULDER 중력 모멘트 ≈ 0 인 구간의
 백래시 헌팅**. 관측 8개가 일치하며 유력하지만 확정은 아니다.
@@ -621,7 +693,7 @@ RL 계약이 "관측 stale → reject" 를 요구하므로 **telemetry 에 관�
 
 | # | 얻는 것 | 왜 지금은 없나 |
 |---|---|---|
-| 1 | **동작 중 관절별 load/current, 팔당 30 ms 전주기** | 현재 buffered 실행 경로엔 부하 감시가 **아예 없다**. blocking 구조라 넣을 자리가 없었다 (`FIRMWARE_ASYNC_RATIONALE` §8) |
+| 1 | **동작 중 관절별 load/current, 팔당 30 ms 전주기** | 현재 buffered 실행 경로엔 부하 감시가 **아예 없다**. blocking 구조라 넣을 자리가 없었다(과거 buffered 경로 회고) |
 | 2 | **leg 별 게인 스케줄링 경로가 싸진다** | 메모리 결론상 흔들림을 정말 고친다면 δ(q) 보다 leg별 P 가 낫다. servo write 가 non-blocking 이면 leg 경계 재설정 비용이 사라진다 |
 | 3 | **측정에서 교란요인 제거** | 지금은 setpoint 계단의 jitter 와 헌팅이 섞여 보인다 |
 
@@ -640,7 +712,7 @@ RL 계약이 "관측 stale → reject" 를 요구하므로 **telemetry 에 관�
 
 ---
 
-## 5. 서보 버스 통신 상태기계
+### 5. 서보 버스 통신 상태기계
 
 팔당 1개 인스턴스, 완전 독립. 좌 실패가 우 타이밍에 영향을 주지 않는다.
 
@@ -705,7 +777,7 @@ t+0.90 ~ t+5.00   버스 유휴 — 여유 82 %
 
 ---
 
-## 6. 안전 상태기계 — 팔별 + 시스템
+### 6. 안전 상태기계 — 팔별 + 시스템
 
 ### 6.1 2계층
 
@@ -758,7 +830,7 @@ IWDG 는 배경 루프에서만 급여한다. tick ISR 이 급여하면 루프�
 
 ---
 
-## 7. 양팔 dispatch skew 최소화
+### 7. 양팔 dispatch skew 최소화
 
 ### 7.1 구조적으로 0 으로 만든다
 
@@ -865,7 +937,7 @@ held-out 기준선을 같은 절차로 측정하고, 오른팔이 그 기준선�
 
 ---
 
-## 8. 동시성 primitive 배정
+### 8. 동시성 primitive 배정
 
 **단일 코어이고, 각 자료구조의 생산자·소비자가 각각 하나뿐이다. 따라서 mutex 가
 필요 없다.** 이것이 비-RTOS 설계의 가장 큰 실익이다.
@@ -884,7 +956,7 @@ held-out 기준선을 같은 절차로 측정하고, 오른팔이 그 기준선�
 
 ---
 
-## 9. Pi ↔ STM32 프로토콜 변경
+### 9. Pi ↔ STM32 프로토콜 변경
 
 현행: COBS + 16 B 헤더 + payload + CRC-32C, magic `0xA55A`, version 1.
 `ACTUATOR_BUFFERED_COMMAND_UNSUPPORTED_RIGHT_SLOT` 로 우 슬롯이 예약만 돼 있다.
@@ -991,7 +1063,7 @@ append/splice 연속성을 검사할 최소 timeline만 보존하며 executable 
 ### 9.2 버전 정책
 
 v1/v2 동시 지원은 하지 않는다. 단일 사용자 시스템이고
-`tools/validate_protocol_manifest.py` + 생성 헤더가 host/firmware 동기를
+`tools/run/validate_protocol_manifest.py` + 생성 헤더가 host/firmware 동기를
 강제하므로 lockstep 이관이 더 싸다. HELLO 응답의 version 불일치는 fail-closed.
 
 ### 9.3 queue 구조 — 팔별 2개가 아니라 12관절 1개 (2026-08-11 정정)
@@ -1050,7 +1122,7 @@ queue·같은 executor 를 쓴다.
 
 ---
 
-## 10. 디렉터리 구조
+### 10. 디렉터리 구조
 
 ```text
 firmware/
@@ -1100,7 +1172,7 @@ firmware/
 
 ---
 
-## 11. 구현 순서
+### 11. 구현 순서
 
 각 단계는 **그 자체로 동작하는 로봇**을 남기고, **자체 gate 로 검증**하며,
 **왼팔 기준선을 후퇴시키지 않는다.**
@@ -1192,8 +1264,8 @@ validation-only wire 연결을 통과했다. `validate_protocol_v2_no_motion.py`
 - `arbiter_epoch` 변경 시 불연속 splice 가 거부됨을 주입으로 확인
 - STALE_TICK 0
 
-> 앞서 이것을 이전 초안의 마지막 단계에 뒀던 것은 틀렸다. `PLAN_CONTINUOUS_EXECUTION.md`
-> §3.4 의 예산표대로 링크 속도가 반응 지연의 1차 제약이다.
+> 앞서 이것을 이전 초안의 마지막 단계에 뒀던 것은 틀렸다. 실측 예산표대로
+> 링크 속도가 반응 지연의 1차 제약이다.
 
 ### F3.0 — TIM6 제어 clock 계측만 (출력 변경 없음)
 
@@ -1523,7 +1595,7 @@ ELBOW `286..2492`, WRIST_FLEX `170..2384`, WRIST_ROLL `587..2838`을
 독립 관측했다. 왼팔 GRIPPER는 cable-safe sweep `1872..3255`, 작업자 확인
 무부하 닫힘 `1891`, 실제 작업에 충분한 task-open `3257`이다. 양쪽 모두 raw
 증가 방향으로 열렸고 reversal/over-center는 없었다. 전체 evidence와 SHA는
-`docs/test-results/2026-08-13-bimanual-j0-desired-envelope.md`에 고정한다.
+`docs/archive/test-results/2026-08-13-bimanual-j0-desired-envelope.md`에 고정한다.
 
 특히 gripper raw sweep은 jaw aperture를 직접 뜻하지 않는다. 기존 왼팔 실기에서
 `0.13 rad`/raw `1963`은 close, `0.06 rad`/raw `2009`는 release로 검증됐지만,
@@ -1566,7 +1638,7 @@ discarded-output `3/3`, maximum lateness `0 ms`로 통과했다. 이어 양쪽 S
 firmware/host unwrapped 값이 일치했다. 최대 sample step은 왼쪽 `93 raw`, 오른쪽
 `111 raw`였다. R4 복구 후 12축 100 sample과 legacy 왼팔 249 sample도 통과했다.
 J1-W hardware gate는 **PASS**이며 상세 artifact/SHA는
-`docs/test-results/2026-08-13-bimanual-j1w-unwrapped-shadow-candidate.md`에 있다.
+`docs/archive/test-results/2026-08-13-bimanual-j1w-unwrapped-shadow-candidate.md`에 있다.
 이는 좌표계 gate만 통과한 것이며 J1 limit parity, J0-M margin, J2 전에는
 non-zero output을 승인하지 않는다.
 
@@ -1598,7 +1670,7 @@ F7-A `0x00024500 / 0x607FFFFF`는 12축 executor µrad를 좌우 6축 raw로
 Shoulder는 unwrapped limit을 통과한 뒤에만 modulo 4096으로 바뀐다. 이 후보에서
 일반 12축 출력은 계속 연결되지 않으며, 기존 왼팔 v1 경로는 패킷 리팩터링 회귀
 확인에만 사용한다. 상세 결과는
-`docs/test-results/2026-08-14-bimanual-dispatch-refactor-f7a.md`에 기록한다.
+`docs/archive/test-results/2026-08-14-bimanual-dispatch-refactor-f7a.md`에 기록한다.
 
 F7 `0x00024604 / 0xEFFFFFFF` 후보는 하나의 TIM6 5 ms event에서 12축을
 원자 변환하고 USART1/UART4의 두 SYNC WRITE를 TX DMA로 연속 기동한다.
@@ -1606,7 +1678,7 @@ F7 `0x00024604 / 0xEFFFFFFF` 후보는 하나의 TIM6 5 ms event에서 12축을
 양팔 torque-off/stop latch로 수렴한다. 현재 자세의 unwrap branch는 승인된 전체
 운용 범위에서 자동 결정한다. 실기 gate는 no-output → zero-delta hold → 제한 왕복 →
 fault injection 순서이며, 연속 tracking feedback은 아직 후속 항목이다. 상세는
-`docs/test-results/2026-08-14-bimanual-dma-dispatch-f7.md`에 기록한다.
+`docs/archive/test-results/2026-08-14-bimanual-dma-dispatch-f7.md`에 기록한다.
 
 F8 tracking-feedback `0x00024700 / 0xEFFFFFFF` 후보는 F7 dispatch 완료마다
 한 관절의 좌우 present position을 비동기 병렬 READ한다. 요청 시점의 정확한
@@ -1614,7 +1686,7 @@ command를 함께 보존하고 6관절을 순환하므로 정상 200 Hz control�
 전체 sweep를 제공한다. 한쪽 reply 실패, 4 ms timeout, unwrap 변환 실패 또는
 tracking-error 초과는 다음 control output 전에 coordinated stop을 요청한다.
 상세는
-`docs/test-results/2026-08-14-bimanual-tracking-feedback-f8.md`에 기록한다.
+`docs/archive/test-results/2026-08-14-bimanual-tracking-feedback-f8.md`에 기록한다.
 
 F8 resident finite/open 실행기는 `0x00024703`에서 START/APPEND/SPLICE/STOP과
 동일 owner/epoch 계약을 실기 통과했다. F8.1 `0x00024800 / 0xEFFFFFFF`은
@@ -1636,15 +1708,20 @@ F8.6 `0x00024806`은 in-motion position read failure를 누적 진단과 연속 
 anchor, 완전한 12축 terminal snapshot과 동일 tolerance를 사용한다. 이 구조로
 current-pose finite 2회 재사용과 Top-camera 왼팔 Pick/Place 2회를 자동 재시도 없이
 통과했다. 최종 증거는
-[`2026-08-15 F8.7 수락 결과`](test-results/2026-08-15-f87-resident-top-camera-pick-place.md)에
+[`2026-08-15 F8.7 수락 결과`](archive/test-results/2026-08-15-f87-resident-top-camera-pick-place.md)에
 기록한다.
 
 F8.9 `0x00024809`는 arm 한계를 유지하면서 gripper 2축에만
 route/terminal `150,000 urad`, firmware hard cap `160,000 urad`를 적용한다.
 정상 물체 접촉 잔차와 arm tracking fault를 분리했으며 no-motion, current-pose
 hold 2회와 실제 left→right Top-camera 전달을 통과했다. 최종 증거는
-[`2026-08-16 F8.9 양팔 전달`](test-results/2026-08-16-f89-bimanual-pen-transfer.md)에
+[`2026-08-16 F8.9 양팔 전달`](archive/test-results/2026-08-16-f89-bimanual-pen-transfer.md)에
 기록한다.
+
+> **이 아래(F3.1~F8, "순서의 근거"까지)는 2026-08-11 원 설계안의 단계별
+> 서술을 그대로 남긴 것이다.** 전부 완료됐다 — 위 완료 로그와
+> `docs/archive/test-results/`가 실제 결과다. 여기 남긴 이유는 각 단계를
+> 왜 그 순서·그 gate로 나눴는지 설계 근거가 있기 때문이다.
 
 ### F3.1 — 제어 tick 을 TIM6 ISR 로
 
@@ -1659,7 +1736,7 @@ bucket 0 으로 수렴. 배경 루프에 인공 정체를 줘도 tick 이 밀리
 - spin-wait 제거, 5 ms 슬롯 시간표 도입
 
 **Gate**: 제어 경로 blocking 대기 0. **buffered 실행 중 관절별 load/current 가
-30 ms 주기로 관측됨** — `FIRMWARE_ASYNC_RATIONALE` §8 이 요구한 진단 능력 확보.
+30 ms 주기로 관측됨** — 과거 buffered 경로에 없던 진단 능력 확보.
 여기서 **백래시 가설 검증 데이터를 수집한다** (4.2절).
 
 ### F5 — 인스턴스화 (아직 한 팔 구동)
@@ -1725,7 +1802,7 @@ TX overflow 0, 30 분 무오류.
 
 - **host 작업(H1~H3)이 F 단계 전체보다 먼저다.** 측정 구간의 약 97%가
   펌웨어 밖에서 소비됐고, 그중 프로세스·정착 오버헤드는 펌웨어 변경 없이
-  줄일 수 있다 (`PLAN_CONTINUOUS_EXECUTION.md` §1)
+  줄일 수 있다
 - **F1~F4 는 양팔과 무관하게 현재 한 팔 로봇을 개선한다.** 양팔 하드웨어가
   늦어져도 낭비되지 않는다
 - **F2.5 가 연속 실행의 반응성을 완성한다.** 수렴이 팔을 멈추지 않게 된다
@@ -1737,7 +1814,7 @@ TX overflow 0, 30 분 무오류.
 
 ---
 
-## 12. 측정 metric
+### 12. 측정 metric
 
 전부 TIM2(5.9 ns) 기반. 히스토그램 + 최댓값으로 보고하며, 최댓값 하나만
 남기지 않는다 (`0x00022800` 교훈: 단일 최댓값은 스파이크와 계통 편차를 구분 못 함).
@@ -1764,11 +1841,11 @@ TX overflow 0, 30 분 무오류.
 오른쪽 열. 이것이 이 작업의 데모 산출물이다 — "FreeRTOS 를 썼다" 보다
 "jitter 를 X → Y 로 줄였고 여기 숫자가 있다" 가 강하다.
 
-`docs/test-results/` 규칙을 따라 단계마다 machine-readable artifact 를 남긴다.
+`docs/archive/test-results/` 규칙을 따라 단계마다 machine-readable artifact 를 남긴다.
 
 ---
 
-## 13. 위험과 완화
+### 13. 위험과 완화
 
 | 위험 | 완화 |
 |---|---|
@@ -1782,7 +1859,7 @@ TX overflow 0, 30 분 무오류.
 
 ---
 
-## 14. 이 설계가 지키는 규율
+### 14. 이 설계가 지키는 규율
 
 - **RTOS 도, DMA 도 목적이 아니다.** 각 항목이 어떤 실측된 문제를 없애는지 적었다
 - **before 없이 after 를 주장하지 않는다.** F0 이 첫 단계인 이유

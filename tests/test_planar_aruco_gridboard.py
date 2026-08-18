@@ -9,7 +9,7 @@ import cv2
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
 SPEC = importlib.util.spec_from_file_location(
     "generate_planar_aruco_gridboard",
-    TOOLS / "generate_planar_aruco_gridboard.py",
+    TOOLS / "setup/camera_calibration/generate_planar_aruco_gridboard.py",
 )
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None

@@ -32,7 +32,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from tools.joint_calibration import (  # noqa: E402
+from tools.lib.joint_calibration import (  # noqa: E402
     calibration_hash,
     load_calibration,
 )

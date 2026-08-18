@@ -186,7 +186,7 @@ baseline noise와 측정 도구 오차를 먼저 기록한 뒤 허용 오차를 
 측정 결과는 다음 형식으로 별도 기록한다.
 
 ```text
-docs/test-results/YYYY-MM-DD-left-gripper-mapping.md
+docs/archive/test-results/YYYY-MM-DD-left-gripper-mapping.md
 ```
 
 결과에는 repository commit, Pi 환경, firmware/protocol/calibration version,

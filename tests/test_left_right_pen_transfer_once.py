@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = (ROOT / "tools/run_left_right_pen_transfer_once.py").read_text(
+SOURCE = (ROOT / "tools/run/run_left_right_pen_transfer_once.py").read_text(
     encoding="utf-8"
 )
 

@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOL = (ROOT / "tools/soak_right_arm_read_only_discovery.py").read_text(
+TOOL = (ROOT / "tools/setup/right_arm/soak_right_arm_read_only_discovery.py").read_text(
     encoding="utf-8"
 )
 

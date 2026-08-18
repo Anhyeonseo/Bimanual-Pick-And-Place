@@ -92,7 +92,7 @@ def test_dual_moveit_limits_match_operator_approved_arm_limits() -> None:
 
 
 def test_dynamic_planner_routes_by_pixels_and_remains_plan_only() -> None:
-    source = (ROOT / "tools/plan_top_camera_pick_place_once.py").read_text(
+    source = (ROOT / "tools/run/plan_top_camera_pick_place_once.py").read_text(
         encoding="utf-8"
     )
     assert "select_arm_for_pixel" in source
@@ -127,7 +127,7 @@ def test_dynamic_planner_routes_by_pixels_and_remains_plan_only() -> None:
 
 
 def test_dynamic_plan_opens_before_approach_and_closes_at_grasp() -> None:
-    path = ROOT / "tools/plan_top_camera_pick_place_once.py"
+    path = ROOT / "tools/run/plan_top_camera_pick_place_once.py"
     spec = importlib.util.spec_from_file_location(
         "plan_top_camera_pick_place_gripper_order_test", path
     )
@@ -164,7 +164,7 @@ def test_dynamic_plan_opens_before_approach_and_closes_at_grasp() -> None:
 
 
 def test_interarm_place_is_fixed_and_left_stage_only() -> None:
-    path = ROOT / "tools/plan_top_camera_pick_place_once.py"
+    path = ROOT / "tools/run/plan_top_camera_pick_place_once.py"
     spec = importlib.util.spec_from_file_location(
         "plan_top_camera_pick_place_interarm_test", path
     )
@@ -192,7 +192,7 @@ def test_interarm_place_is_fixed_and_left_stage_only() -> None:
 
 
 def test_endpoint_solver_locks_wrist_roll_at_bimanual_q0() -> None:
-    path = ROOT / "tools/plan_top_camera_pick_place_once.py"
+    path = ROOT / "tools/run/plan_top_camera_pick_place_once.py"
     spec = importlib.util.spec_from_file_location(
         "plan_top_camera_pick_place_locked_wrist_test", path
     )

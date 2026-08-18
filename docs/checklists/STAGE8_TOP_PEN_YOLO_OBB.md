@@ -105,7 +105,7 @@ names:
 source /opt/ros/jazzy/setup.bash
 source ros2_ws/install/setup.bash
 
-python3 tools/capture_top_frame.py \
+python3 tools/setup/camera_calibration/capture_top_frame.py \
   --output datasets/top_pen_obb_training/images/train/train_positive_001.png
 ~~~
 
@@ -142,7 +142,7 @@ case id, split, 상대 경로와 조건만 기록한다. 수집이 끝나면 다
 이미지와 label SHA를 계산해 manifest를 만든다.
 
 ~~~bash
-python3 tools/build_top_pen_obb_training_manifest.py \
+python3 tools/setup/pen_detector_training/build_top_pen_obb_training_manifest.py \
   --dataset-root datasets/top_pen_obb_training \
   --metadata datasets/top_pen_obb_training/metadata.json \
   --output datasets/top_pen_obb_training/manifest.json
@@ -155,7 +155,7 @@ python3 tools/build_top_pen_obb_training_manifest.py \
 ## 데이터 gate
 
 ~~~bash
-python3 tools/validate_top_pen_obb_training_dataset.py \
+python3 tools/setup/pen_detector_training/validate_top_pen_obb_training_dataset.py \
   --manifest datasets/top_pen_obb_training/manifest.json \
   --holdout-manifest artifacts/stage8/top_pen_dataset/manifest.json \
   --contract config/top_pen_yolo_obb_training_contract.json \
@@ -178,14 +178,14 @@ python3 tools/validate_top_pen_obb_training_dataset.py \
 ~~~bash
 python3 -m venv .venv-yolo-obb
 source .venv-yolo-obb/bin/activate
-python3 -m pip install --no-cache-dir -r requirements-training-cu128.txt
-python3 -m pip install -r requirements-training.txt
+python3 -m pip install --no-cache-dir -r requirements/training-cu128.txt
+python3 -m pip install -r requirements/training.txt
 ~~~
 
 먼저 학습 없이 계약만 확인한다.
 
 ~~~bash
-python3 tools/train_export_top_pen_yolo_obb.py \
+python3 tools/setup/pen_detector_training/train_export_top_pen_yolo_obb.py \
   --manifest datasets/top_pen_obb_training/manifest.json \
   --holdout-manifest artifacts/stage8/top_pen_dataset/manifest.json \
   --training-contract config/top_pen_yolo_obb_training_contract.json \
@@ -197,7 +197,7 @@ python3 tools/train_export_top_pen_yolo_obb.py \
 GPU가 있는 워크스테이션에서는 실제 학습을 수행한다.
 
 ~~~bash
-python3 tools/train_export_top_pen_yolo_obb.py \
+python3 tools/setup/pen_detector_training/train_export_top_pen_yolo_obb.py \
   --manifest datasets/top_pen_obb_training/manifest.json \
   --holdout-manifest artifacts/stage8/top_pen_dataset/manifest.json \
   --training-contract config/top_pen_yolo_obb_training_contract.json \
@@ -216,7 +216,7 @@ holdout_used_for_training=false가 들어간다.
 ## 고정 holdout 비교
 
 ~~~bash
-python3 tools/evaluate_top_pen_yolo_obb.py \
+python3 tools/setup/pen_detector_training/evaluate_top_pen_yolo_obb.py \
   --manifest artifacts/stage8/top_pen_dataset/manifest.json \
   --contract config/top_pen_yolo_obb_evaluation_contract.json \
   --bundle-manifest artifacts/stage8/top_pen_yolo_obb_candidate/top_pen_yolo_obb_bundle.json \
@@ -257,7 +257,7 @@ python3 -m venv --system-site-packages \
 
 /home/pi/Manipulation/.venv-top-perception-opencv410/bin/python -m pip install \
   --require-hashes --no-deps \
-  -r /home/pi/Manipulation/requirements-top-perception-runtime.txt
+  -r /home/pi/Manipulation/requirements/top-perception-runtime.txt
 ~~~
 
 먼저 Top OBB runtime을 실행한다.

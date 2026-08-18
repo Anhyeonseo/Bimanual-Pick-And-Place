@@ -13,8 +13,8 @@ PROTOCOL_CORE = (ROOT / "firmware/stm32_actuator/src/protocol.c").read_text(
 )
 BRIDGE = (ROOT / "ros2_ws/src/single_arm_bridge/single_arm_bridge/bridge_node.py").read_text(encoding="utf-8")
 LAUNCH = (ROOT / "ros2_ws/src/single_arm_bridge/launch/bridge.launch.py").read_text(encoding="utf-8")
-TOOL = (ROOT / "tools/execute_right_arm_jog_once.py").read_text(encoding="utf-8")
-TORQUE_TOOL = (ROOT / "tools/enable_right_arm_torque_once.py").read_text(
+TOOL = (ROOT / "tools/setup/right_arm/execute_right_arm_jog_once.py").read_text(encoding="utf-8")
+TORQUE_TOOL = (ROOT / "tools/setup/right_arm/enable_right_arm_torque_once.py").read_text(
     encoding="utf-8"
 )
 

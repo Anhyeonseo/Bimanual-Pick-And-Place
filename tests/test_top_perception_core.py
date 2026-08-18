@@ -1,11 +1,19 @@
+import importlib
+import sys
 import unittest
+from pathlib import Path
 
-from tests.test_top_object_pose import MODULE
+ROOT = Path(__file__).resolve().parents[1]
+PACKAGE_SOURCE = ROOT / "ros2_ws" / "src" / "so101_top_perception"
+if str(PACKAGE_SOURCE) not in sys.path:
+    sys.path.insert(0, str(PACKAGE_SOURCE))
+
+shared_detector = importlib.import_module("so101_top_perception.detector")
 
 
 class TopPerceptionFrameAgeTest(unittest.TestCase):
     def test_fresh_source_timestamp_returns_age(self) -> None:
-        age = MODULE.shared_detector.frame_age_seconds(
+        age = shared_detector.frame_age_seconds(
             now_nanoseconds=10_100_000_000,
             stamp_seconds=10,
             stamp_nanoseconds=0,
@@ -17,10 +25,10 @@ class TopPerceptionFrameAgeTest(unittest.TestCase):
 
     def test_stale_source_timestamp_is_rejected(self) -> None:
         with self.assertRaisesRegex(
-            MODULE.shared_detector.DetectionError,
+            shared_detector.DetectionError,
             "exceeds",
         ) as context:
-            MODULE.shared_detector.frame_age_seconds(
+            shared_detector.frame_age_seconds(
                 now_nanoseconds=10_300_000_000,
                 stamp_seconds=10,
                 stamp_nanoseconds=0,
@@ -32,9 +40,9 @@ class TopPerceptionFrameAgeTest(unittest.TestCase):
 
     def test_missing_source_timestamp_is_rejected(self) -> None:
         with self.assertRaises(
-            MODULE.shared_detector.DetectionError,
+            shared_detector.DetectionError,
         ) as context:
-            MODULE.shared_detector.frame_age_seconds(
+            shared_detector.frame_age_seconds(
                 now_nanoseconds=10_000_000_000,
                 stamp_seconds=0,
                 stamp_nanoseconds=0,
@@ -46,9 +54,9 @@ class TopPerceptionFrameAgeTest(unittest.TestCase):
 
     def test_excessively_future_timestamp_is_rejected(self) -> None:
         with self.assertRaises(
-            MODULE.shared_detector.DetectionError,
+            shared_detector.DetectionError,
         ) as context:
-            MODULE.shared_detector.frame_age_seconds(
+            shared_detector.frame_age_seconds(
                 now_nanoseconds=10_000_000_000,
                 stamp_seconds=10,
                 stamp_nanoseconds=100_000_000,

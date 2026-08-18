@@ -15,38 +15,32 @@
 공통 파일:
 
 ```text
-ros2_ws/src/single_arm_bridge/config/bridge.yaml
+ros2_ws/src/single_arm_bridge/config/bimanual_stream.yaml
 ```
 
-기본 `serial_device` 값은 `auto`다. node가 단일 ST-LINK by-id를 탐색하고, 발견하지 못하면 `/dev/ttyACM0`를 사용한다. 둘 이상의 ST-LINK가 발견되면 잘못된 팔을 제어하지 않도록 실행을 거부한다.
+기본 `serial_device` 값은 `auto`다(`device_discovery.resolve_serial_device`).
 
-장치를 명시적으로 고정하려면:
+- 단일 ST-LINK by-id를 탐색한다.
+- 못 찾으면 `/dev/ttyACM0`를 fallback으로 쓴다.
+- ST-LINK가 둘 이상 발견되면 잘못된 팔을 제어하지 않도록 실행을 거부한다.
 
-```bash
-cd ~/Manipulation/ros2_ws/src/single_arm_bridge/config
-cp bridge.local.yaml.example bridge.local.yaml
-```
-
-그 후 `bridge.local.yaml`의 `<SERIAL>`을 다음 명령에서 확인한 실제 값으로 바꾼다.
+장치를 명시적으로 고정하려면 `serial_device`를 launch argument로 넘긴다.
+양팔 resident adapter는 별도 local YAML 오버레이 파일을 쓰지 않는다.
 
 ```bash
 ls -l /dev/serial/by-id/
+ros2 launch single_arm_bridge bimanual_stream.launch.py serial_device:=/dev/serial/by-id/<실제 값>
 ```
 
-다시 build한다.
+## 실행
 
 ```bash
-cd ~/Manipulation/ros2_ws
-source /opt/ros/jazzy/setup.bash
-colcon build --symlink-install --packages-select single_arm_bridge
-source install/setup.bash
+ros2 launch single_arm_bridge bimanual_stream.launch.py
 ```
 
-실행 명령은 기존과 같다.
-
-```bash
-ros2 launch single_arm_bridge bridge.launch.py
-```
+legacy `single_arm_bridge` 일반 trajectory backend(`bridge.launch.py`)는
+비승인이다. 양팔 motion은 resident adapter(`bimanual_stream.launch.py`)
+경로만 사용한다.
 
 ## 새 PC 또는 새 Pi로 이동할 때
 
@@ -62,10 +56,15 @@ local YAML을 별도로 백업할 수는 있지만 공개 GitHub나 issue 본문
 
 ## 카메라 경로
 
-현재 카메라는 `manipulation_camera_manager/config/cameras.yaml`의 USB 물리 port 기반 경로를 사용한다. 카메라나 hub port를 바꾸면 아래 명령으로 경로를 다시 확인한 뒤 YAML을 수정한다.
+카메라는 `manipulation_camera_manager/config/cameras.yaml`의 USB 물리 port
+기반 경로를 사용한다. 카메라나 hub port를 바꾸면:
 
 ```bash
 ls -l /dev/v4l/by-path/
 ```
 
-카메라 경로에는 인증정보가 없지만 port 역할이 바뀌면 `top`, `wrist_a`, `wrist_b` 영상이 뒤바뀔 수 있으므로 변경 후 `/camera_diagnostics`와 실제 영상을 함께 확인한다.
+로 경로를 다시 확인한 뒤 YAML을 수정한다.
+
+카메라 경로에는 인증정보가 없다. 다만 port 역할이 바뀌면 `top`, `wrist_a`,
+`wrist_b` 영상이 뒤바뀔 수 있으므로, 변경 후에는 `/camera_diagnostics`와
+실제 영상을 함께 확인한다.

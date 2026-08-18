@@ -55,7 +55,7 @@ Stage의 `/so101_new_calib/Workcell` 아래에서 확정 형상을 확인한다.
 작업셀은 물리 시뮬레이션 대상이 아니므로 `Play` 여부와 무관하게 정지해
 있어야 한다. 이 형상은 2026-07-28 Isaac Sim 6.0.1 GUI에서 사용자가
 실물 조립과 육안 정합했으며 결과는
-`../docs/test-results/2026-07-28-overhead-camera-workcell.md`에 기록했다.
+`../docs/archive/test-results/2026-07-28-overhead-camera-workcell.md`에 기록했다.
 
 ROS 2 Bridge가 필요한 경우 Isaac Sim을 ROS 2 Jazzy 환경을 source한
 terminal에서 실행한다. 전체 실행 순서와 joint mapping은
@@ -63,7 +63,7 @@ terminal에서 실행한다. 전체 실행 순서와 joint mapping은
 
 `assets/so101_new_calib`의 geometry는 TheRobotStudio SO-101 asset의
 commit `fda892cba81032c46c40976a48c9ceadbf40a9ca`에서 가져왔다.
-license는 root `THIRD_PARTY_NOTICES.md`와 `LICENSE`를 확인한다.
+license는 `docs/THIRD_PARTY_NOTICES.md`와 `LICENSE`를 확인한다.
 
 ## 양팔 q0 시각 정합 후보
 

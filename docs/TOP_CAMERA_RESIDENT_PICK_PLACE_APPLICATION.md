@@ -32,14 +32,18 @@
 5. 실행기가 같은 owner로 양팔 5축을 q0로 복귀시키고 torque를 유지한다.
 6. 토크 공백 없이 JSON을 resident 12축 명령으로 변환하며, 성공 시 q0 hold를 유지한다.
 
-READY 상태에서는 서보 피드백 폴링이 정지하므로 `/feedback`의 `sample_age_ms`가
-증가할 수 있다. 실행기는 계획을 만들기 직전에 `/refresh_anchor`를 호출하고 그
-응답으로 새로 발행된 transient-local `anchor_joint_states`만 최초 자세로 사용한다.
-resident node는 각 finite leg 완료 시에도 측정된 최종 자세로 이 anchor를
-갱신한다. 실제 동작 중에는 fresh `/feedback`을 사용한다. 종료 판정은 firmware의
-12회 연속 measured joint-pair 정착 검사와 resident의 완전한 12축 snapshot
-freshness 검사를 통과한 뒤 `ACTIVE -> READY` 전환에서 새로 발행된 terminal
-anchor를 사용한다.
+앵커(anchor) 갱신 규칙:
+
+- READY 상태에서는 서보 피드백 폴링이 정지하므로 `/feedback`의
+  `sample_age_ms`가 증가할 수 있다.
+- 실행기는 계획을 만들기 직전에 `/refresh_anchor`를 호출하고, 그 응답으로
+  새로 발행된 transient-local `anchor_joint_states`만 최초 자세로 사용한다.
+- resident node는 각 finite leg 완료 시에도 측정된 최종 자세로 이 anchor를
+  갱신한다.
+- 실제 동작 중에는 fresh `/feedback`을 사용한다.
+- 종료 판정은 firmware의 12회 연속 measured joint-pair 정착 검사와
+  resident의 완전한 12축 snapshot freshness 검사를 통과한 뒤,
+  `ACTIVE -> READY` 전환에서 새로 발행된 terminal anchor를 사용한다.
 
 PC MoveIt은 `allow_trajectory_execution=false`로 고정된다. 하드웨어 실행 경로는
 `/bimanual_stream_adapter/command` 하나뿐이다.
@@ -124,7 +128,7 @@ export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 source /opt/ros/jazzy/setup.bash
 source ros2_ws/install/setup.bash
 
-python3 tools/plan_top_camera_pick_place_once.py   --plan-only   --routing-deadband-px 40   --output artifacts/top_pick_place/2026-08-14/dynamic_plan_run01.json
+python3 tools/run/plan_top_camera_pick_place_once.py   --plan-only   --routing-deadband-px 40   --output artifacts/top_pick_place/2026-08-14/dynamic_plan_run01.json
 ```
 
 성공 출력에는 `selected_arm=left` 또는 `selected_arm=right`, 픽셀 x/영상 폭,
@@ -132,32 +136,38 @@ python3 tools/plan_top_camera_pick_place_once.py   --plan-only   --routing-deadb
 선택 팔의 IK로 새로 풀며, 반대 팔 q0를 포함한 self-collision 검사를 통과해야 한다.
 기존 place의 **관절각**은 재사용하지 않는다.
 
-현재 펜 reference task는 wrist roll을 양팔 q0인 `0.0 rad`로 고정하고
-나머지 4축으로 TCP xyz를 맞춘다. 물체 yaw는 진단값이며 펜 실행 조건으로
-강제하지 않는다. 캔 task의 orientation-aware wrist roll은 다음 PR에서
-별도 승격한다.
+펜 reference task는 wrist roll을 양팔 q0인 `0.0 rad`로 고정하고 나머지 4축으로
+TCP xyz를 맞춘다. 물체 yaw는 진단값이며 펜 실행 조건으로 강제하지 않는다.
 
-그리퍼는 `raw 2048`까지 연 뒤 접근하고 grasp에서 `raw 1948`까지 닫는다.
-접촉 판정은 잔차 14 raw 이상이다. F8.9는 arm route tracking 90,000 µrad와
-terminal 46,020 µrad를 유지하고, 그리퍼만 route/terminal 150,000 µrad,
-firmware hard cap 160,000 µrad를 적용한다.
+**그리퍼**
 
-동적 grasp 목표는 object z 기준 `-0.001 m` offset을 사용한다. 계획에는
-기준/선택 offset, 화면축 보정, homography SHA와 corrected target을 기록하고
-실행기가 schema 12 계약과 plan SHA를 검증한다.
+- `raw 2048`까지 연 뒤 접근하고, grasp에서 `raw 1948`까지 닫는다.
+- 접촉 판정은 잔차 `14 raw` 이상.
+- F8.9는 arm route tracking `90,000 µrad`와 terminal `46,020 µrad`를
+  유지하고, 그리퍼만 route/terminal `150,000 µrad`, firmware hard cap
+  `160,000 µrad`를 적용한다.
 
-실행기는 50 ms 시각열을 만들고 resident가 긴 finite horizon을 내부
-9점/400 ms wire batch로 공급한다. q0 복귀와 arm route는 연속 finite leg로
-묶고, gripper open/close/release만 분리한다. firmware가 12회 연속 measured
-pair를 확인하고 resident가 terminal snapshot freshness와 오차를 검증한 뒤에만
-READY/HOLD로 전이한다.
+**동적 grasp 목표**
+
+- object z 기준 `-0.001 m` offset을 사용한다.
+- 계획에는 기준/선택 offset, 화면축 보정, homography SHA, corrected
+  target을 기록하고, 실행기가 schema 12 계약과 plan SHA를 검증한다.
+
+**실행기 동작**
+
+- 50 ms 시각열을 만들고, resident가 긴 finite horizon을 내부 9점/400 ms
+  wire batch로 공급한다.
+- q0 복귀와 arm route는 연속 finite leg로 묶고, gripper open/close/release만
+  분리한다.
+- firmware가 12회 연속 measured pair를 확인하고 resident가 terminal
+  snapshot freshness와 오차를 검증한 뒤에만 READY/HOLD로 전이한다.
 
 ## 무동작 resident gate
 
 plan-only 출력의 SHA-256을 그대로 넣는다.
 
 ```bash
-python3 tools/run_top_pick_place_application_once.py   --validate-only   --plan artifacts/top_pick_place/2026-08-14/dynamic_plan_run01.json   --plan-sha256 <PLAN_SHA256>   --output artifacts/top_pick_place/2026-08-14/validate_run01.json
+python3 tools/run/run_top_pick_place_application_once.py   --validate-only   --plan artifacts/top_pick_place/2026-08-14/dynamic_plan_run01.json   --plan-sha256 <PLAN_SHA256>   --output artifacts/top_pick_place/2026-08-14/validate_run01.json
 ```
 
 `TOP_PICK_PLACE_DYNAMIC_VALIDATE_ONLY_PASS motion_commands=0 resident_services_called=0`가
@@ -188,5 +198,5 @@ python3 tools/run_top_pick_place_application_once.py   --validate-only   --plan 
 전체 journal SHA-256은
 `408c21d6e7211834351123c5058cf7a8be50b8d20d064ec3f861230099198fbc`다.
 세부 firmware·resident·stage 증거는
-[F8.9 resident와 양팔 펜 전달 수락 결과](test-results/2026-08-16-f89-bimanual-pen-transfer.md)에
+[F8.9 resident와 양팔 펜 전달 수락 결과](archive/test-results/2026-08-16-f89-bimanual-pen-transfer.md)에
 기록했다.

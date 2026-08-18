@@ -1,6 +1,11 @@
-# Pi–STM32 통신 규격 v1 초안
+# Pi–STM32 통신 규격
 
-상태: `채택`. 단일 팔용 protocol v1은 실기에 적용했으며, 여러 sample queue와 양팔 payload 실행은 이후 단계에서 추가 검증한다.
+상태: `채택`. 현재 배포된 resident firmware(F8.9 `0x00024809`)는 **protocol
+v2**를 쓴다 — 12관절(양팔) 단일 stream, `STREAM_OPEN`/`SPLICE`/진단 메시지가
+추가됐다. 이 문서 §2~5, 7~10은 v1부터 이어지는 frame·상태머신·fault 규칙으로
+지금도 그대로 유효하다. **§6은 v2 기준으로 다시 썼다** — v1의 6관절
+`arm_mask=1` 전용 setpoint 규칙은 [부록: v1 setpoint (초기 단일팔 구동, 지금은
+대체됨)](#부록-v1-setpoint-초기-단일팔-구동-지금은-대체됨)에 남겨뒀다.
 
 ## 1. 범위
 
@@ -10,8 +15,8 @@
 ROS 2 / Pi
     ↓ ST-LINK VCP, 이 문서에서 정의한 protocol
 STM32G474
-    ├─ UART → Left Waveshare adapter → STS3215 ID 1~6
-    └─ UART → Right Waveshare adapter → STS3215 ID 1~6
+    ├─ UART (USART1) → Left Waveshare adapter → STS3215 ID 1~6
+    └─ UART (UART4)  → Right Waveshare adapter → STS3215 ID 1~6
 ~~~
 
 `START`, `SEARCH`, `PLACE`처럼 작업 의미를 나타내는 상태는 ROS 계층에 둔다. MCU protocol은 actuator 활성화, setpoint, 상태와 fault만 다룬다.
@@ -30,8 +35,8 @@ Decode한 frame 구조:
 | 시작 위치 | 자료형 | 필드 | 설명 |
 |---:|---|---|---|
 | 0 | `uint16` | magic | 고정값 `0xA55A` |
-| 2 | `uint8` | version | protocol의 주 version, 초기값 1 |
-| 3 | `uint8` | message_type | `message_ids.json` 참조 |
+| 2 | `uint8` | version | protocol의 주 version. 현재 배포는 **2**(`ACTUATOR_PROTOCOL_VERSION`) |
+| 3 | `uint8` | message_type | §2.1 메시지 ID 참조 |
 | 4 | `uint16` | flags | ACK 요청, 응답, 오류 등의 표시 |
 | 6 | `uint16` | payload_length | payload 크기, 최대 512 byte |
 | 8 | `uint32` | sequence | 전송 방향마다 따로 증가하는 번호 |
@@ -40,6 +45,54 @@ Decode한 frame 구조:
 | 16+N | `uint32` | crc32c | header와 payload 전체 검사값 |
 
 CRC가 맞더라도 magic, version, type, length 또는 현재 MCU 상태가 올바르지 않으면 packet을 거부한다.
+
+### 2.1 메시지 ID
+
+session/state_control/motion(레거시)/feedback 범위(1~63)는
+`protocol/message_ids.json`이 기계가 읽을 수 있는 단일 소스이고
+`tools/setup/firmware/generate_protocol_header.py`가 여기서 C 헤더를 생성한다. **v2 stream
+메시지(40~47, 58~62)는 이 manifest에 없다** — `firmware/stm32_actuator/include/actuator_core/stream_contract_v2.h`(C)와
+`ros2_ws/src/single_arm_bridge/single_arm_bridge/stream_protocol_v2.py`(Python)에
+직접 손으로 정의돼 있고 서로 대조하는 생성기가 없다. 이 표는 두 소스를 합친
+요약이다.
+
+| ID | 이름 | 방향 | 비고 |
+|---:|---|---|---|
+| 1 | `HELLO_REQUEST` | Host→MCU | |
+| 2 | `HELLO_RESPONSE` | MCU→Host | `left_hash`/`right_hash` 팔별 calibration hash 포함 |
+| 3 | `HEARTBEAT` | Host→MCU | |
+| 4 | `TIME_SYNC_REQUEST` | Host→MCU | |
+| 5 | `TIME_SYNC_RESPONSE` | MCU→Host | |
+| 16 | `ARM_REQUEST` | Host→MCU | |
+| 17 | `ARM_RESPONSE` | MCU→Host | |
+| 18 | `ENABLE` | Host→MCU | |
+| 19 | `HOLD` | Host→MCU | |
+| 20 | `SAFE_STOP` | Host→MCU | |
+| 21 | `DISABLE` | Host→MCU | |
+| 22 | `CLEAR_FAULT` | Host→MCU | |
+| 32 | `SETPOINT_BATCH` (append) | Host→MCU | v2에서는 항상 12관절 sample, §6 |
+| 33 | `SETPOINT_STATUS` | MCU→Host | |
+| 40 | `STREAM_OPEN` | Host→MCU | 120 B, stream당 1회. §6 |
+| 41 | `STREAM_STATUS` | MCU→Host | 36 B |
+| 42 | `SPLICE` | Host→MCU | append와 같은 배치 형식 |
+| 43 | `GET_EXECUTOR_DIAGNOSTICS` | Host→MCU | |
+| 44 | `EXECUTOR_DIAGNOSTICS` | MCU→Host | 60 B |
+| 45 | `PREPARE_SHADOW` | Host→MCU | verified torque-disable 요청. 팔이 중력에 떨어질 수 있음 |
+| 46 | `SHADOW_SNAPSHOT` | MCU→Host | 76 B |
+| 47 | `GET_DISPATCH_DIAGNOSTICS` | Host→MCU | |
+| 48 | `GET_STATE` | Host→MCU | |
+| 49 | `STATE_FEEDBACK` | MCU→Host | |
+| 50 | `FAULT_REPORT` | MCU→Host | |
+| 51 | `DIAGNOSTICS` | MCU→Host | §5 "On-demand 서보 diagnostics" |
+| 58 | `DISPATCH_DIAGNOSTICS` | MCU→Host | 44 B |
+| 59 | `GET_TRACKING_DIAGNOSTICS` | Host→MCU | |
+| 60 | `TRACKING_DIAGNOSTICS` | MCU→Host | 76 B |
+| 61 | `GET_FEEDBACK_SNAPSHOT` | Host→MCU | |
+| 62 | `FEEDBACK_SNAPSHOT` | MCU→Host | 116 B |
+
+`RIGHT_ARM_*`(34~39, 52~57) 등 초기 우팔 단독 bring-up 전용 메시지는 R-track
+commissioning에서만 쓰고 resident v2 경로에서는 쓰지 않는다. 전체 목록은
+`protocol/message_ids.json`을 본다.
 
 ## 3. Sequence와 재전송
 
@@ -82,7 +135,7 @@ HELLO/TIME_SYNC
 
 Raspberry Pi는 STS3215 raw 위치를 보내지 않는다. STM32가 보정 정보에 기록된 방향 부호, 원점과 안전 raw 범위를 사용해 관절 단위를 서보 raw 단위로 바꾸고 마지막 안전 제한을 적용한다.
 
-Pi와 STM32는 `HELLO` 단계에서 `calibration_hash`를 비교한다. 값이 다르면 `ARMING`을 거부한다.
+Pi와 STM32는 `HELLO` 단계에서 팔별 calibration hash(`left_hash`, `right_hash`)를 비교한다. 값이 다르면 `ARMING`을 거부한다.
 
 ### 실제 관절 위치 feedback
 
@@ -200,11 +253,87 @@ HOLD와 stop latch로 fail-closed 처리한다. capability bit 6(0x00000040)이 
 나타낸다. ACK 누락·sequence 불일치·latched 응답은 host transport 오류이며 자동 동작
 재시도로 이어지지 않는다.
 
-## 6. Setpoint를 한 번에 적용하는 규칙
+## 6. Stream 계약 (v2) — `STREAM_OPEN` → `SETPOINT_BATCH`/`SPLICE`
 
-`SETPOINT_BATCH` frame 하나에는 좌우 각 6개 actuator의 목표가 들어간다. 한 팔만 움직일 때도 반대쪽 목표를 현재 Hold 목표로 채운다.
+v2는 팔별 mode enum이 없다. **stream 하나**를 열고, 그 안에서 append(`SETPOINT_BATCH`)와
+`SPLICE`로 12관절(양팔 6+6) sample을 채운다. `arm_mask`가 한 팔만 선택해도
+sample 열은 항상 12개이며, 선택되지 않은 팔의 값은 마지막 절대 목표를 그대로
+유지한다 — v1의 "반대쪽은 Hold 목표로 채운다"는 원칙이 이제 12관절 sample
+자체의 규칙이 됐다.
 
-v1 payload 구조:
+`STREAM_OPEN` (ID 40, 120 B, stream당 1회):
+
+~~~text
+u16 minimum_start_samples
+u8  arm_mask                        # bit0=left, bit1=right, 0b11=양팔
+u8  reserved = 0
+u32 minimum_lead_ms
+u32 horizon_end_tick                # 0 = open(무한) stream
+u32 maximum_lead_ms
+u32 command_timeout_ms
+u32 maximum_apply_lateness_ms
+i32 tracking_error_limit_urad[12]
+i32 maximum_step_urad_per_tick[12]
+~~~
+
+`SETPOINT_BATCH`(append, ID 32)/`SPLICE`(ID 42) 20 B header + sample:
+
+~~~text
+u32 first_apply_tick
+u32 horizon_end_tick
+u32 arbiter_epoch                   # 소유자 교체 시 연속성 강제
+u32 splice_at_tick                  # append=0, splice≠0
+u8  sample_count                    # 1~9
+u8  arm_mask
+u16 reserved = 0
+for each sample (52 B):
+    u32 tick_offset
+    i32 position_urad[12]           # 항상 12관절, gripper 2축 포함
+~~~
+
+최대 배치는 `20 + 9×52 = 488 B`로 512 B payload 한도 안에 든다. `mode`/`track`/`source`/`residual`
+필드는 존재하지 않는다 — 펌웨어는 명령 출처(MoveIt, 상단 애플리케이션, 수동
+jog)를 전혀 모르며 절대 목표만 받는다. `horizon_end_tick`이 곧 finite(값 있음)와
+open(0) stream을 가르는 유일한 필드다.
+
+`STREAM_STATUS` (ID 41, 36 B):
+
+~~~text
+u8  status_code
+u8  contract_result
+u8  safety_state
+u8  arm_mask
+u32 request_sequence
+u32 sender_time_ms_echo             # host가 command latency를 직접 계산
+u32 arbiter_epoch
+u32 horizon_end_tick
+u32 validated_tail_tick
+u32 execution_queue_samples
+u32 accepted_samples
+u32 applied_samples
+~~~
+
+`status_code` (`actuator_v2_stream_status_code_t`): `0=OK`, `1=CONTRACT_REJECTED`,
+`2=NOT_OPEN`, `3=QUEUE_OVERFLOW`, `4=SPLICE_POSITION_UNAVAILABLE`,
+`5=VALIDATION_ONLY`.
+
+- Packet 전체가 유효할 때만 queue에 반영한다. 일부 관절만 따로 반영하지 않는다.
+- Integer 전송 형식에는 NaN이 존재하지 않는다.
+- 단위 변환 overflow, limit 위반 또는 불연속 setpoint가 있으면 packet 전체를 거부한다.
+- 한 팔 tracking fault는 양팔 coordinated stop으로 이어진다 — v2 queue가
+  12관절 하나이므로 "한쪽만 정지"는 구조적으로 불가능하다.
+
+세부 필드 폭·enum 값의 1차 소스는 코드다:
+`firmware/stm32_actuator/include/actuator_core/stream_contract_v2.h`(C),
+`ros2_ws/src/single_arm_bridge/single_arm_bridge/stream_protocol_v2.py`(Python).
+설계 근거와 v1→v2 변경 사유 전체는
+[양팔 펌웨어 아키텍처 §9](../docs/FIRMWARE_DUAL_ARM_ARCHITECTURE.md#9-pi--stm32-프로토콜-변경)에
+있다.
+
+### 부록: v1 setpoint (초기 단일팔 구동, 지금은 대체됨)
+
+아래는 최초 단일팔 구동에 썼던 v1 `SETPOINT_BATCH` 규칙이다. 12관절 stream
+계약으로 대체됐고 지금은 참조용으로만 남긴다.
 
 ~~~text
 uint32 apply_tick_ms
@@ -217,50 +346,10 @@ for each sample:
     int32  right_position_urad[6]
 ~~~
 
-현재 단일 팔 초기 구동 펌웨어는 `arm_mask=1`만 허용하고, 존재하지 않는 오른팔 목표 6개가 모두 0인지 검사한다. 양팔 통합 시에는 두 팔의 현재 Hold 목표를 모두 포함하는 규칙으로 확장한다.
-
-초기 검증 단계의 `SETPOINT_STATUS.status` 값:
-
-- `0`: queue가 명령을 정상 접수
-- `1`: payload 또는 적용 시각 형식 오류
-- `2`: `ACTIVE` 상태가 아니거나 stop latch 상태
-- `3`: 관절각 변환 실패 또는 raw limit 위반
-- `4`: 지원하지 않는 팔 위치(slot)
-- `5`: 전체 검증은 통과했지만 실행하지 않는 validation-only 상태
-- `6`: 실행 완료. `detail`은 최대 raw 위치 오차이며 최댓값은 255
-- `7`: servo bus 설정, 쓰기 또는 최종 읽기 실패
-- `8`: Heartbeat, `HOLD` 또는 `SAFE_STOP`으로 실행 중단
-- `9`: 동작 중 load/current 안전 한계 초과 또는 telemetry 읽기 실패. `detail`은 원인이 발생한 servo ID
-
-`flags.bit0=1`이면 packet 전체를 검사만 하고 실행하지 않는다. 현재 단일 팔
-실행기는 `flags.bit0=0`과 `sample_count=1`만 실행한다.
-
-Motion-3/4 후보는 bit 1을 candidate 식별자, bit 2/3/4를 BEGIN/START/END로
-사용한다. 최대 9개 sample을 원자적으로 검사하고 기존 16바이트 status 뒤에
-executor/terminal/queue 진단을 붙인 32바이트 응답을 정의한다.
-
-firmware `0x00021900`의 capability bit 10(`0x00000400`)은 이 후보 route의
-**validation-only** 연결만 뜻한다. Candidate frame은 bit 0도 반드시 켜야 하며
-`status=5`, queue/accepted/applied sample이 모두 0인 확장 응답으로 무동작을
-증명한다. 이 validation-only candidate는 물리 torque가 꺼진
-`SAFE_DISABLED/READ_ONLY`에서도 허용하지만 stop latch, `FAULT`, `ESTOPPED`,
-진행 중 motion에서는 거부한다. bit 0이 없는 candidate는 거부한다. 기존 flag 0,
-`sample_count=1` 경로만 기존 single-point 동작을 유지한다. Pi–VCP timing
-실측과 별도 실행 route 승인 전에는 multi-sample 물리 buffered 실행 권한이 없다.
-
-firmware `0x00020E00`부터 endpoint는 보간 종료 100 ms 뒤 한 번만 읽지
-않는다. 최대 1000 ms 동안 load/current watchdog를 유지하면서 위치를 읽고,
-최대 관절 오차가 30 raw 이내인 sample이 2회 연속이면 조기 완료한다. 최대
-시간에는 마지막 sample의 최대 오차를 `status=6.detail`로 보고한다.
-`0x00021000`부터 시작 위치와 endpoint 위치 읽기는 main-loop당 한 축의
-cooperative sweep이고, safety telemetry도 16 ms round-robin slot으로 한 축씩
-읽는다. Host Action은 최악 시작 sweep과 settling을 포함하도록 trajectory
-시간 뒤 3.5초의 terminal 여유를 둔다.
-
-- Packet 전체가 유효할 때만 queue에 반영한다.
-- 일부 관절만 따로 반영하지 않는다.
-- Integer 전송 형식에는 NaN이 존재하지 않는다.
-- 단위 변환 overflow, limit 위반 또는 불연속 setpoint가 있으면 packet 전체를 거부한다.
+당시 단일 팔 초기 구동 펌웨어는 `arm_mask=1`만 허용하고 존재하지 않는 오른팔
+목표 6개가 모두 0인지 검사했다. `SETPOINT_STATUS.status` 값(`0`=정상 접수 ~
+`9`=동작 중 안전 한계 초과)과 `flags.bit0`(검사만 하고 실행 안 함) 의미는 v2에서도
+그대로 이어진다.
 
 ## 7. MCU 상태 머신
 
@@ -320,7 +409,7 @@ Serial message 이름으로 `ESTOP`을 사용하지 않는다. Software packet�
 구현 전 확인:
 
 ~~~bash
-python3 tools/validate_protocol_manifest.py
+python3 tools/run/validate_protocol_manifest.py
 ~~~
 
 펌웨어 단계 확인:
