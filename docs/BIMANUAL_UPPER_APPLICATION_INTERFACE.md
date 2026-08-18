@@ -41,18 +41,23 @@ STM32 실측 12축 ─────> ROS feedback ──────────�
 - Pi에서 resident node 하나만 STM32 serial과 backend lease를 소유한다.
 - 여러 명령 소스는 ROS service 앞의 단일 상단 arbiter에서 선택한다. 여러 프로세스가 서로 다른 `owner`로 service를 경쟁 호출하지 않는다.
 
-F8.9는 startup torque-disable의 bounded register-40 readback recovery를
-유지한다. 팔 관절의 route tracking/terminal 계약은 변경하지 않고, 정상 물체
-접촉을 tracking fault로 오인하지 않도록 gripper 2축에만 150,000 µrad
-route/terminal 한계와 160,000 µrad firmware hard cap을 적용한다. F8.9는
-no-motion, finite reuse와 실제 left→right Top-camera 전달을 통과했다.
+**F8.9 안전 한계**
 
-F8.7의 `failed_pairs`는 누적 degraded-telemetry 진단값이다. in-motion 위치
-read가 1~2회 연속 실패해도 다음 성공 pair에서 streak를 0으로 복구하며,
-3회 연속 실패할 때 firmware가 coordinated stop을 latch한다. 반면 측정된
-tracking error 초과, DMA/dispatch fault, heartbeat timeout은 기존처럼 즉시
-정지한다. 상단 앱은 누적 `failed_pairs > 0`만으로 별도 STOP을 중복 요청하지
-않고 resident의 `faulted`/stop-latched 상태를 따른다.
+- startup torque-disable의 bounded register-40 readback recovery를 유지한다.
+- 팔 관절의 route tracking/terminal 계약은 그대로 두고, gripper 2축에만
+  완화된 한계를 적용한다: route/terminal `150,000 µrad`, firmware hard cap
+  `160,000 µrad`. 정상 물체 접촉을 tracking fault로 오인하지 않기 위해서다.
+- no-motion, finite reuse, 실제 left→right Top-camera 전달을 통과했다.
+
+**F8.7 `failed_pairs` 진단값**
+
+- in-motion 위치 read가 1~2회 연속 실패해도 다음 성공 pair에서 streak를
+  0으로 복구한다.
+- 3회 연속 실패하면 firmware가 coordinated stop을 latch한다.
+- 측정된 tracking error 초과, DMA/dispatch fault, heartbeat timeout은
+  기존처럼 즉시 정지한다.
+- 상단 앱은 누적 `failed_pairs > 0`만으로 별도 STOP을 중복 요청하지 않고
+  resident의 `faulted`/stop-latched 상태를 따른다.
 
 ## 3. 실행
 

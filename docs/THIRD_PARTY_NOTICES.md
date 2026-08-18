@@ -1,6 +1,9 @@
 # Third-party notices
 
-이 저장소의 자체 작성 코드와 문서는 루트 [Apache License 2.0](LICENSE)을 따른다. 아래 디렉터리에는 STM32CubeIDE가 생성하거나 함께 배포한 제3자 구성 요소가 포함되어 있으며, 각 구성 요소의 원래 저작권 표시와 license가 우선 적용된다.
+이 저장소의 자체 작성 코드와 문서는 루트 [Apache License 2.0](../LICENSE)을
+따른다. 아래 디렉터리에는 STM32CubeIDE가 생성하거나 함께 배포한 제3자 구성
+요소가 포함되어 있으며, 각 구성 요소의 원래 저작권 표시와 license가 우선
+적용된다.
 
 | 구성 요소 | 위치 | License |
 |---|---|---|

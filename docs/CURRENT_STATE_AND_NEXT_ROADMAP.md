@@ -9,24 +9,36 @@
 
 ## 완료
 
-- STM32 한 대가 좌 USART1/우 UART4의 SO-ARM101 6축씩을 제어한다.
-- 공통 5 ms executor, paired DMA dispatch, operational limits, shoulder unwrap,
-  measured tracking과 coordinated stop을 사용한다.
-- Pi resident adapter만 serial backend를 소유하고 12축 finite command,
-  fresh anchor, terminal feedback과 owner/epoch 상태를 ROS로 공개한다.
-- F8.9는 팔 tracking 한계를 유지하면서 그리퍼 접촉에만
-  150,000 µrad terminal/route 한계와 160,000 µrad firmware hard cap을 적용한다.
+**하드웨어 제어**
+
+- STM32 한 대가 좌팔(USART1)과 우팔(UART4) SO-ARM101을 각각 6축씩 독립 제어한다.
+- 공통 5 ms executor로 동작하며 paired DMA dispatch, operational limits,
+  shoulder unwrap, measured tracking, coordinated stop을 갖췄다.
+
+**통신 계층**
+
+- Pi의 resident adapter만 serial backend를 소유한다.
+- ROS로 12축 finite command, fresh anchor, terminal feedback, owner/epoch
+  상태를 공개한다.
+
+**안전 한계**
+
+- 팔 tracking 한계는 그대로 유지하고, 그리퍼 접촉에만 완화된 한계를 적용한다:
+  terminal/route `150,000 µrad`, firmware hard cap `160,000 µrad`.
 - motion-disabled gate와 current-pose hold 2회를 통과했다.
+
+**카메라·계획**
+
 - 상단 카메라/작업대 보정과 오른팔 data-fit URDF를 적용했다.
-- 계획 스키마 12에서 화면축 보정을 plan SHA에 고정한다.
+- 계획 스키마 12가 화면축 보정을 plan SHA에 고정한다.
   - 왼팔: 화면 오른쪽 13.72 mm
   - 오른팔: 화면 왼쪽 29.47 mm
-- fresh left plan→검증→실행→fresh right plan→검증→실행을 자동 재시도 없이
-  완주했고 최종 READY/HOLD를 유지했다.
 
-최종 증거는
-[F8.9 resident와 양팔 펜 전달 수락 결과](archive/test-results/2026-08-16-f89-bimanual-pen-transfer.md)에
-모았다.
+**실행 결과**
+
+- fresh left plan → 검증 → 실행 → fresh right plan → 검증 → 실행을 자동
+  재시도 없이 완주했고, 최종 READY/HOLD를 유지했다.
+- 최종 증거: [F8.9 resident와 양팔 펜 전달 수락 결과](archive/test-results/2026-08-16-f89-bimanual-pen-transfer.md)
 
 ## 운영 불변식
 
