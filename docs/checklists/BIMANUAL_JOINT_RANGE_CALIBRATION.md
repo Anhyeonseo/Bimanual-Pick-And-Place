@@ -204,7 +204,7 @@ firmware/host mismatch는 0, R4 복구 soak는 100/100이었다. 이 결과는 w
 기존 왼팔 offset 0.011 m Pick–Place manifest의 7개 phase, 1,031 trajectory
 point를 전수 검사한 결과 arm 5축이 모두 후보 안이었다. 최소 limit clearance는
 Shoulder의 0.130388 rad였다. 상세 수치와 SHA는
-`docs/test-results/2026-08-13-bimanual-j1-operational-limit-candidate.md`에
+`docs/archive/test-results/2026-08-13-bimanual-j1-operational-limit-candidate.md`에
 고정한다.
 
 사용자는 64 raw 수축안을 다음 검증 후보로 승인했다. `0x00024100` no-output

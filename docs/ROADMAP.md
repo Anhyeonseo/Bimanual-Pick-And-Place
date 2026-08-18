@@ -248,7 +248,7 @@
   TCP-to-contact 후보 `0.015 m`를 plan-only·충돌 검사·실기 1회로 다시
   보정한 뒤 채택한다.
   상세 결과는
-  [감독형 실제 Pick/Place](test-results/2026-07-31-stage7-supervised-pick-place-complete.md)에
+  [감독형 실제 Pick/Place](archive/test-results/2026-07-31-stage7-supervised-pick-place-complete.md)에
   기록했다.
 
 ## 단계 8 — 왼팔 생산 기준선과 Visual Servo
@@ -428,7 +428,7 @@
   terminal snapshot을 완료 조건으로 고정했다. F8.7 no-motion, current-pose finite
   2회, fresh-anchor 회귀와 Top-camera 왼팔 Pick/Place 2회(run20/run22)를
   자동 재시도 없이 통과했다. 결과와 남은 오른팔 task/policy/soak 범위는
-  [F8.7 최종 수락 결과](test-results/2026-08-15-f87-resident-top-camera-pick-place.md)를
+  [F8.7 최종 수락 결과](archive/test-results/2026-08-15-f87-resident-top-camera-pick-place.md)를
   따른다.
 - 좌우 공통 운용 범위, unwrap parity와 왼팔·오른팔 단독 기준선이 준비된 뒤
   dual planning group과 공유

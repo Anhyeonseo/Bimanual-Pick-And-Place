@@ -178,8 +178,8 @@ blocking 구조 때문에 buffered 경로에 넣을 자리가 없어 제외했�
 
 ## 9. 근거 기록
 
-- [`0x00022600` 계측과 startup 중단](test-results/2026-08-06-stm32-0x00022600-apply-lateness-instrumentation.md)
-- [`0x00022900` status 프레임 전송 예산](test-results/2026-08-06-stm32-0x00022900-status-transmit-budget.md)
-- [C2 수렴 실기 — SHOULDER 정상상태 오차](test-results/2026-08-06-c2-convergence-physical.md)
-- [A5 재현성 — 워밍업 전이](test-results/2026-08-06-a5-repeatability-pilot.md)
+- [`0x00022600` 계측과 startup 중단](archive/test-results/2026-08-06-stm32-0x00022600-apply-lateness-instrumentation.md)
+- [`0x00022900` status 프레임 전송 예산](archive/test-results/2026-08-06-stm32-0x00022900-status-transmit-budget.md)
+- [C2 수렴 실기 — SHOULDER 정상상태 오차](archive/test-results/2026-08-06-c2-convergence-physical.md)
+- [A5 재현성 — 워밍업 전이](archive/test-results/2026-08-06-a5-repeatability-pilot.md)
 - 로드맵 D절 0번: `docs/CURRENT_STATE_AND_NEXT_ROADMAP.md`

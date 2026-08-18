@@ -1523,7 +1523,7 @@ ELBOW `286..2492`, WRIST_FLEX `170..2384`, WRIST_ROLL `587..2838`을
 독립 관측했다. 왼팔 GRIPPER는 cable-safe sweep `1872..3255`, 작업자 확인
 무부하 닫힘 `1891`, 실제 작업에 충분한 task-open `3257`이다. 양쪽 모두 raw
 증가 방향으로 열렸고 reversal/over-center는 없었다. 전체 evidence와 SHA는
-`docs/test-results/2026-08-13-bimanual-j0-desired-envelope.md`에 고정한다.
+`docs/archive/test-results/2026-08-13-bimanual-j0-desired-envelope.md`에 고정한다.
 
 특히 gripper raw sweep은 jaw aperture를 직접 뜻하지 않는다. 기존 왼팔 실기에서
 `0.13 rad`/raw `1963`은 close, `0.06 rad`/raw `2009`는 release로 검증됐지만,
@@ -1566,7 +1566,7 @@ discarded-output `3/3`, maximum lateness `0 ms`로 통과했다. 이어 양쪽 S
 firmware/host unwrapped 값이 일치했다. 최대 sample step은 왼쪽 `93 raw`, 오른쪽
 `111 raw`였다. R4 복구 후 12축 100 sample과 legacy 왼팔 249 sample도 통과했다.
 J1-W hardware gate는 **PASS**이며 상세 artifact/SHA는
-`docs/test-results/2026-08-13-bimanual-j1w-unwrapped-shadow-candidate.md`에 있다.
+`docs/archive/test-results/2026-08-13-bimanual-j1w-unwrapped-shadow-candidate.md`에 있다.
 이는 좌표계 gate만 통과한 것이며 J1 limit parity, J0-M margin, J2 전에는
 non-zero output을 승인하지 않는다.
 
@@ -1598,7 +1598,7 @@ F7-A `0x00024500 / 0x607FFFFF`는 12축 executor µrad를 좌우 6축 raw로
 Shoulder는 unwrapped limit을 통과한 뒤에만 modulo 4096으로 바뀐다. 이 후보에서
 일반 12축 출력은 계속 연결되지 않으며, 기존 왼팔 v1 경로는 패킷 리팩터링 회귀
 확인에만 사용한다. 상세 결과는
-`docs/test-results/2026-08-14-bimanual-dispatch-refactor-f7a.md`에 기록한다.
+`docs/archive/test-results/2026-08-14-bimanual-dispatch-refactor-f7a.md`에 기록한다.
 
 F7 `0x00024604 / 0xEFFFFFFF` 후보는 하나의 TIM6 5 ms event에서 12축을
 원자 변환하고 USART1/UART4의 두 SYNC WRITE를 TX DMA로 연속 기동한다.
@@ -1606,7 +1606,7 @@ F7 `0x00024604 / 0xEFFFFFFF` 후보는 하나의 TIM6 5 ms event에서 12축을
 양팔 torque-off/stop latch로 수렴한다. 현재 자세의 unwrap branch는 승인된 전체
 운용 범위에서 자동 결정한다. 실기 gate는 no-output → zero-delta hold → 제한 왕복 →
 fault injection 순서이며, 연속 tracking feedback은 아직 후속 항목이다. 상세는
-`docs/test-results/2026-08-14-bimanual-dma-dispatch-f7.md`에 기록한다.
+`docs/archive/test-results/2026-08-14-bimanual-dma-dispatch-f7.md`에 기록한다.
 
 F8 tracking-feedback `0x00024700 / 0xEFFFFFFF` 후보는 F7 dispatch 완료마다
 한 관절의 좌우 present position을 비동기 병렬 READ한다. 요청 시점의 정확한
@@ -1614,7 +1614,7 @@ command를 함께 보존하고 6관절을 순환하므로 정상 200 Hz control�
 전체 sweep를 제공한다. 한쪽 reply 실패, 4 ms timeout, unwrap 변환 실패 또는
 tracking-error 초과는 다음 control output 전에 coordinated stop을 요청한다.
 상세는
-`docs/test-results/2026-08-14-bimanual-tracking-feedback-f8.md`에 기록한다.
+`docs/archive/test-results/2026-08-14-bimanual-tracking-feedback-f8.md`에 기록한다.
 
 F8 resident finite/open 실행기는 `0x00024703`에서 START/APPEND/SPLICE/STOP과
 동일 owner/epoch 계약을 실기 통과했다. F8.1 `0x00024800 / 0xEFFFFFFF`은
@@ -1636,14 +1636,14 @@ F8.6 `0x00024806`은 in-motion position read failure를 누적 진단과 연속 
 anchor, 완전한 12축 terminal snapshot과 동일 tolerance를 사용한다. 이 구조로
 current-pose finite 2회 재사용과 Top-camera 왼팔 Pick/Place 2회를 자동 재시도 없이
 통과했다. 최종 증거는
-[`2026-08-15 F8.7 수락 결과`](test-results/2026-08-15-f87-resident-top-camera-pick-place.md)에
+[`2026-08-15 F8.7 수락 결과`](archive/test-results/2026-08-15-f87-resident-top-camera-pick-place.md)에
 기록한다.
 
 F8.9 `0x00024809`는 arm 한계를 유지하면서 gripper 2축에만
 route/terminal `150,000 urad`, firmware hard cap `160,000 urad`를 적용한다.
 정상 물체 접촉 잔차와 arm tracking fault를 분리했으며 no-motion, current-pose
 hold 2회와 실제 left→right Top-camera 전달을 통과했다. 최종 증거는
-[`2026-08-16 F8.9 양팔 전달`](test-results/2026-08-16-f89-bimanual-pen-transfer.md)에
+[`2026-08-16 F8.9 양팔 전달`](archive/test-results/2026-08-16-f89-bimanual-pen-transfer.md)에
 기록한다.
 
 ### F3.1 — 제어 tick 을 TIM6 ISR 로
@@ -1764,7 +1764,7 @@ TX overflow 0, 30 분 무오류.
 오른쪽 열. 이것이 이 작업의 데모 산출물이다 — "FreeRTOS 를 썼다" 보다
 "jitter 를 X → Y 로 줄였고 여기 숫자가 있다" 가 강하다.
 
-`docs/test-results/` 규칙을 따라 단계마다 machine-readable artifact 를 남긴다.
+`docs/archive/test-results/` 규칙을 따라 단계마다 machine-readable artifact 를 남긴다.
 
 ---
 

@@ -188,5 +188,5 @@ python3 tools/run_top_pick_place_application_once.py   --validate-only   --plan 
 전체 journal SHA-256은
 `408c21d6e7211834351123c5058cf7a8be50b8d20d064ec3f861230099198fbc`다.
 세부 firmware·resident·stage 증거는
-[F8.9 resident와 양팔 펜 전달 수락 결과](test-results/2026-08-16-f89-bimanual-pen-transfer.md)에
+[F8.9 resident와 양팔 펜 전달 수락 결과](archive/test-results/2026-08-16-f89-bimanual-pen-transfer.md)에
 기록했다.

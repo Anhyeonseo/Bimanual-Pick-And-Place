@@ -233,7 +233,7 @@ leg 를 더하므로 Action 수도 늘어난다. **양팔 진입 전 필수** �
 때문이다. 다음 질문은 "4 mm 안에 넣을 수 있는가" 가 아니라 **"얼마나
 재현되는가"** 이며 그것은 A5 pilot 의 몫이다.
 
-기록: `docs/test-results/2026-08-06-c2-convergence-physical.md`
+기록: `docs/archive/test-results/2026-08-06-c2-convergence-physical.md`
 
 ### A5 — 잔차 재현성 — **완료 2026-08-06**
 - [x] 같은 자세 6회 반복. **파지 6/6**, 잔여 간격 `21~23 raw`
@@ -248,7 +248,7 @@ leg 를 더하므로 Action 수도 늘어난다. **양팔 진입 전 필수** �
 `0.094 mm` 로 재현된다. 남은 잔차는 offset 이 흡수하며 그 방식이 성립함이
 실측으로 확인됐다.
 
-기록: `docs/test-results/2026-08-06-a5-repeatability-pilot.md`
+기록: `docs/archive/test-results/2026-08-06-a5-repeatability-pilot.md`
 
 ### C3 — 손목 카메라 (외부수용 층)
 - W0 optical frame → W1 내부 파라미터 → W2 캡처 세션 → W3 eye-in-hand →

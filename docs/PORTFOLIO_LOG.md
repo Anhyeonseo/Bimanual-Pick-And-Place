@@ -2,7 +2,7 @@
 
 이 파일은 결과만 나열하지 않고 문제, 판단, 검증과 개선 과정을 기록한다.
 
-날짜가 지난 항목은 당시의 판단을 남긴 기록이다. 현재 구현 상태는 [바이너리 제어 경로 검증 결과](test-results/2026-07-20-stm32-binary-control-plane.md)와 [검증 매트릭스](VERIFICATION_MATRIX.md)를 우선해서 확인한다.
+날짜가 지난 항목은 당시의 판단을 남긴 기록이다. 현재 구현 상태는 [바이너리 제어 경로 검증 결과](archive/test-results/2026-07-20-stm32-binary-control-plane.md)와 [검증 매트릭스](VERIFICATION_MATRIX.md)를 우선해서 확인한다.
 
 ## 기록 템플릿
 
@@ -237,8 +237,8 @@
 
 **증거**
 
-- `docs/test-results/2026-07-21-camera-phase-decode-latency.md`
-- `docs/test-results/2026-07-21-camera-decode-control-load.md`
+- `docs/archive/test-results/2026-07-21-camera-phase-decode-latency.md`
+- `docs/archive/test-results/2026-07-21-camera-decode-control-load.md`
 - `tools/camera_control_load_test.py`
 - `ros2_ws/src/manipulation_camera_manager`
 
@@ -306,7 +306,7 @@
 **증거**
 
 - `docs/checklists/PHASE_4_ISAAC_MOVEIT_INTEGRATION.md`
-- `docs/test-results/2026-07-24-isaac-moveit-left-arm-integration.md`
+- `docs/archive/test-results/2026-07-24-isaac-moveit-left-arm-integration.md`
 - `ros2_ws/src/so101_isaac_bridge/test/test_mapping.py`
 - `isaac_sim/assets/so101_new_calib/so101_new_calib.usda`
 
@@ -364,7 +364,7 @@
 
 **증거**
 
-- `docs/test-results/2026-07-25-phase5-stm32-read-only.md`
+- `docs/archive/test-results/2026-07-25-phase5-stm32-read-only.md`
 - `docs/checklists/PHASE_5_LEFT_ARM_HARDWARE_BACKEND.md`
 - `tools/ros_moveit_execute_once.py`
 
@@ -438,8 +438,8 @@
 
 **증거**
 
-- `docs/test-results/2026-07-30-top-base-shadow-target.md`
-- `docs/test-results/evidence/2026-07-30-top-shadow-dry-run.yaml`
+- `docs/archive/test-results/2026-07-30-top-base-shadow-target.md`
+- `docs/archive/test-results/evidence/2026-07-30-top-shadow-dry-run.yaml`
 
 
 ---
@@ -477,9 +477,9 @@
 
 **증거**
 
-- `docs/test-results/2026-07-30-current-table-base-registration.md`
-- `docs/test-results/evidence/2026-07-30-top-base-table-validation.yaml`
-- `docs/test-results/evidence/2026-07-30-top-shadow-corrected-validation.yaml`
+- `docs/archive/test-results/2026-07-30-current-table-base-registration.md`
+- `docs/archive/test-results/evidence/2026-07-30-top-base-table-validation.yaml`
+- `docs/archive/test-results/evidence/2026-07-30-top-shadow-corrected-validation.yaml`
 
 
 ---
@@ -511,8 +511,8 @@
 
 **증거**
 
-- `docs/test-results/2026-07-30-stage7-reachability-audit.md`
-- `docs/test-results/evidence/2026-07-30-stage7-reachability-blocked.yaml`
+- `docs/archive/test-results/2026-07-30-stage7-reachability-audit.md`
+- `docs/archive/test-results/evidence/2026-07-30-stage7-reachability-blocked.yaml`
 
 
 ---
@@ -746,7 +746,7 @@
 - 감독형 시운전 체크리스트는 100%; 정식 단계 7 합격 조건인 50회/90%
   benchmark 전에는 multi-point/buffered trajectory 시간축 계약을 구현·검증
 - 상세 증거:
-  `docs/test-results/2026-07-31-stage7-supervised-pick-place-complete.md`
+  `docs/archive/test-results/2026-07-31-stage7-supervised-pick-place-complete.md`
 
 ## 2026-08-01 — 현재 분기점, Top 카메라 재배치, 오른팔 복구 보고
 
@@ -784,7 +784,7 @@
 - 실제 detector·MoveIt·ONNX policy는 없었으므로 전체 통합 자원 gate는
   부분 통과다. 다음은 deployment manifest를 동결한 policy shadow 계측이다.
 - 증거:
-  `docs/test-results/2026-08-02-pi-runtime-camera-only-30m.md`,
+  `docs/archive/test-results/2026-08-02-pi-runtime-camera-only-30m.md`,
   `artifacts/stage9/2026-08-02/pi_runtime_camera_only_30m.json`.
 
 
@@ -804,7 +804,7 @@
   후보를 같은 계약으로 비교한다.
 - 로봇 명령, bridge, MoveIt과 12 V 동작은 없었다.
 - 증거:
-  `docs/test-results/2026-08-02-top-pen-holdout-legacy-baseline.md`,
+  `docs/archive/test-results/2026-08-02-top-pen-holdout-legacy-baseline.md`,
   `artifacts/stage8/top_pen_dataset/manifest.json`,
   `artifacts/stage8/top_pen_detection_legacy_baseline.json`.
 
@@ -841,6 +841,6 @@
 - 규범 계약:
   docs/BIMANUAL_UPPER_APPLICATION_INTERFACE.md
 - 최종 수락:
-  docs/test-results/2026-08-15-f87-resident-top-camera-pick-place.md
+  docs/archive/test-results/2026-08-15-f87-resident-top-camera-pick-place.md
 - 다음 범위는 오른팔 task-level Pick/Place, 좌우 반복성 benchmark,
   pretrained-policy shadow/제한 실기와 통합 soak다.

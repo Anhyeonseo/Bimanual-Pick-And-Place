@@ -15,7 +15,7 @@ README = ROOT / "README.md"
 CURRENT_STATE = ROOT / "docs/CURRENT_STATE_AND_NEXT_ROADMAP.md"
 VERIFICATION_MATRIX = ROOT / "docs/VERIFICATION_MATRIX.md"
 FINAL_ACCEPTANCE = (
-    ROOT / "docs/test-results/2026-08-16-f89-bimanual-pen-transfer.md"
+    ROOT / "docs/archive/test-results/2026-08-16-f89-bimanual-pen-transfer.md"
 )
 
 
@@ -109,7 +109,7 @@ def test_readme_points_to_the_current_resident_contract() -> None:
     assert "resident firmware: F8.9 `0x00024809`" in readme
     assert "docs/BIMANUAL_UPPER_APPLICATION_INTERFACE.md" in readme
     assert "legacy `single_arm_bridge` 일반 trajectory backend는 비승인" in readme
-    assert "docs/test-results/2026-08-16-f89-bimanual-pen-transfer.md" in readme
+    assert "docs/CURRENT_STATE_AND_NEXT_ROADMAP.md" in readme
 
 
 def test_final_acceptance_and_current_state_preserve_the_proven_boundary() -> None:

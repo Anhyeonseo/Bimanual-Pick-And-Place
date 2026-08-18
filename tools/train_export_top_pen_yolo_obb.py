@@ -231,7 +231,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--holdout-manifest", required=True, type=Path)
     parser.add_argument("--training-contract", required=True, type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
-    parser.add_argument("--base-model", default="yolo11n-obb.pt")
+    parser.add_argument("--base-model", default="models/yolo11n-obb.pt")
     parser.add_argument("--image-size", type=int, default=320)
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch", type=int, default=16)

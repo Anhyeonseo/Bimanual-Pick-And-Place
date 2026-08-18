@@ -10,7 +10,7 @@
 
 ## 1. 먼저 — 시간이 어디서 죽고 있나
 
-`docs/test-results/evidence/2026-08-07-repeat-stop-diagnosis-34-leg.json`
+`docs/archive/test-results/evidence/2026-08-07-repeat-stop-diagnosis-34-leg.json`
 (34 leg, Pi 실기)에서 leg 사이 간격을 직접 계산했다.
 
 | 구간 | n | 중앙값 | 최소 | 최대 |
