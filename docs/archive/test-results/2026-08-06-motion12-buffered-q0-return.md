@@ -117,7 +117,7 @@ Pi 로그인 셸에는 둘 다 `unset` 이다. 물리 실행은 반드시
 
 ## 다음
 
-A3(연속 Pick/Place) 진입 판단은 [ROADMAP](../CURRENT_STATE_AND_NEXT_ROADMAP.md) 에
+A3(연속 Pick/Place) 진입 판단은 [ROADMAP](../../CURRENT_STATE_AND_NEXT_ROADMAP.md) 에
 기록한다. 요지는 이 분포가 **길이에 비례해 악화되지 않는다**는 것이다 —
 refill 당 1 sample 이고 그 크기는 전송시간으로 고정되어 있다. 다만 여유가
 `0.312 ms` 라는 사실은 변하지 않는다.

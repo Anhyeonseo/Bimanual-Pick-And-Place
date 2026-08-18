@@ -20,10 +20,8 @@ MoveIt의 standard action에서 STM32까지 이어지는 end-to-end 검증을
 
 1. 실제 측정 결과
 2. 현재 repository code
-3. 최신 `docs/test-results`
+3. 최신 `docs/archive/test-results`
 4. 최신 ADR
-5. `docs/ROADMAP.md`
-6. 과거 대화와 인계 문서
 
 calibration, firmware safe limit, torque limit은 사용자 승인 없이 변경하지
 않는다.
@@ -491,7 +489,7 @@ Git rollback은 파일 삭제, `git reset --hard`, `git clean`을 사용하지 �
 - q0 변경 전 Top–base 등록 결과는 무효이며 재등록 전 기하 기반 task motion 차단
 - q0 변경 후 READ_ONLY에서 arm 최대 편차 `0.02148 rad`, feedback `4.998 Hz`,
   ROS TF와 offline actual-joint FK 차이 `0.52 µm`로 내부 파이프라인 PASS.
-  [시험 기록](../test-results/2026-07-26-left-arm-q0-realignment.md)
+  [시험 기록](../archive/test-results/2026-07-26-left-arm-q0-realignment.md)
 - camera의 left Wrist A/B semantic mapping UNKNOWN
 - camera phase에 과거 `RIGHT` 이름이 남아 있음
 - Windows/Pi local source가 GitHub와 완전히 같은지 UNKNOWN

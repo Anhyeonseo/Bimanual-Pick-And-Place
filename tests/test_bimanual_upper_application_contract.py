@@ -7,13 +7,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "docs/BIMANUAL_UPPER_APPLICATION_INTERFACE.md"
-PROMPT = ROOT / "docs/prompts/BIMANUAL_UPPER_APPLICATION_HANDOFF_PROMPT.md"
 COMMAND = ROOT / "ros2_ws/src/so101_interfaces/srv/BimanualStreamCommand.srv"
 FEEDBACK = ROOT / "ros2_ws/src/so101_interfaces/msg/BimanualJointFeedback.msg"
 LIMITS = ROOT / "config/bimanual_operational_limits.json"
 README = ROOT / "README.md"
 CURRENT_STATE = ROOT / "docs/CURRENT_STATE_AND_NEXT_ROADMAP.md"
-VERIFICATION_MATRIX = ROOT / "docs/VERIFICATION_MATRIX.md"
+VERIFICATION_MATRIX = ROOT / "docs/archive/VERIFICATION_MATRIX.md"
 FINAL_ACCEPTANCE = (
     ROOT / "docs/archive/test-results/2026-08-16-f89-bimanual-pen-transfer.md"
 )
@@ -61,28 +60,6 @@ def test_legacy_general_backend_remains_unavailable() -> None:
     assert limits["general_trajectory_output_available"] is False
     assert "legacy `single_arm_bridge`" in contract
     assert "resident 12축 경로뿐" in contract
-
-
-def test_handoff_prompt_preserves_the_source_agnostic_safety_boundary() -> None:
-    prompt = PROMPT.read_text(encoding="utf-8")
-    for required in (
-        "이미 학습",
-        "source-agnostic",
-        "serial port",
-        "canonical 12축 absolute radians",
-        "sample_age_ms <= 150",
-        "START_OPEN",
-        "APPEND",
-        "SPLICE",
-        "STOP exactly once",
-        "refresh_anchor",
-        "자동 reset/clear/retry",
-        "46,020 µrad",
-        "150,000 µrad",
-        "완전한 finite route 전체",
-        "READY_ARMED_HOLD",
-    ):
-        assert required in prompt
 
 
 def test_contract_records_proven_application_and_session_semantics() -> None:

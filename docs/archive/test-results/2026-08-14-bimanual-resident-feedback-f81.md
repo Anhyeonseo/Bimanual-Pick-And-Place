@@ -93,7 +93,7 @@ Firmware/ROS stream 경계는 완료했다. 다음은 firmware source와 무관�
 - task-level 반복성, fault injection과 운영 runbook
 
 상단 구현 계약은
-[`docs/BIMANUAL_UPPER_APPLICATION_INTERFACE.md`](../BIMANUAL_UPPER_APPLICATION_INTERFACE.md),
+[`docs/BIMANUAL_UPPER_APPLICATION_INTERFACE.md`](../../BIMANUAL_UPPER_APPLICATION_INTERFACE.md),
 개발 인계 프롬프트는
 [`docs/prompts/BIMANUAL_UPPER_APPLICATION_HANDOFF_PROMPT.md`](../prompts/BIMANUAL_UPPER_APPLICATION_HANDOFF_PROMPT.md)에
 고정한다.

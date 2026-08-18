@@ -119,7 +119,7 @@ coordinated STOP은 발생하지 않았다.
 5. 부팅, reset, serial lease, status 2/3 startup failure를 포함한 운영 runbook
 
 상단 개발자는
-[`BIMANUAL_UPPER_APPLICATION_INTERFACE.md`](../BIMANUAL_UPPER_APPLICATION_INTERFACE.md)를
+[`BIMANUAL_UPPER_APPLICATION_INTERFACE.md`](../../BIMANUAL_UPPER_APPLICATION_INTERFACE.md)를
 규범 계약으로 사용하고,
 [`BIMANUAL_UPPER_APPLICATION_HANDOFF_PROMPT.md`](../prompts/BIMANUAL_UPPER_APPLICATION_HANDOFF_PROMPT.md)를
 구현 인계 입력으로 사용한다.

@@ -180,8 +180,8 @@ leg 는 모델 peak 오차 `0.000`, post-settle `14 raw` 였다.
 ### 조율된 중단
 
 팔 A 가 수렴에 실패했는데 팔 B 가 물체를 들고 있으면 둘 다 멈춰야 한다.
-`docs/CURRENT_STATE_AND_NEXT_ROADMAP.md` D절의 "한 팔 fault 시 양팔 coordinated
-stop" 이 그것이며, 수렴 실패도 그 fault 목록에 들어간다.
+[현재 상태](../CURRENT_STATE_AND_NEXT_ROADMAP.md)의 "한 팔 fault 시 양팔
+coordinated stop" 이 그것이며, 수렴 실패도 그 fault 목록에 들어간다.
 
 ### 비동기 host 송신이 더 급해진다
 
@@ -250,23 +250,15 @@ leg 를 더하므로 Action 수도 늘어난다. **양팔 진입 전 필수** �
 
 기록: `docs/archive/test-results/2026-08-06-a5-repeatability-pilot.md`
 
-### C3 — 손목 카메라 (외부수용 층)
-- W0 optical frame → W1 내부 파라미터 → W2 캡처 세션 → W3 eye-in-hand →
-  W4 bounded correction
-- **C1 이 끝난 뒤에 해야** 실패 원인이 갈린다
-- 실행 체크리스트: `docs/checklists/WRIST_CAMERA_EYE_IN_HAND.md`
+### C3~C5 — 계획 당시 다음 단계, 실제로는 다른 경로로 감
 
-### C4 — 한 팔 최종 산출물
-- 인식 → 수렴 → 손목 보정 → 파지 → 배치 전 구간
-- A5 10회 pilot. 회차별 증거와 잔차 기록
-- **여기까지가 독립적으로 가치 있는 결과다.** 양팔 없이도 "정해진 물체를
-  반복해서 집어 옮긴다" 를 증거와 함께 주장할 수 있다
-
-### C5 — 양팔 진입 전 필수 (별도 트랙, 병행 가능)
-- 비동기 host 송신 (여유 `0.312 ms` 제거)
-- 비동기 servo I/O + 타이머 ISR executor
-- 오른팔 슬롯 활성화
-- 조율된 중단
+이 문서 작성 시점(2026-08-06)의 계획은 C3 손목 카메라 보정 → C4 한 팔
+최종 산출물 → C5 양팔 진입 준비 순서였다. 실제로는 **손목 카메라 경로를
+시도한 뒤 폐기하고**(실현 가능한 정확도가 정상 파지 개선에 못 미침이
+실측으로 확인됨) 곧장 양팔 dispatch 작업으로 넘어갔다. C5가 나열한
+항목(비동기 host 송신, 비동기 servo I/O, 오른팔 슬롯, 조율된 중단)은
+전부 완료됐으며 그 실행 순서와 근거는
+[양팔 펌웨어 아키텍처](../FIRMWARE_DUAL_ARM_ARCHITECTURE.md)에 있다.
 
 ## 7. 이 계획이 지키는 규율
 

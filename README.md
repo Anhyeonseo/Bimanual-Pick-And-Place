@@ -114,16 +114,12 @@ cp bridge.local.yaml.example bridge.local.yaml
 
 - [프로젝트 헌장](docs/PROJECT_CHARTER.md)
 - [현재 상태](docs/CURRENT_STATE_AND_NEXT_ROADMAP.md)
-- [전체 로드맵](docs/ROADMAP.md)
-- [포트폴리오 작업 기록](docs/PORTFOLIO_LOG.md)
-- [검증 매트릭스](docs/VERIFICATION_MATRIX.md)
 
 **인터페이스·아키텍처**
 
 - [양팔 상단 애플리케이션 인터페이스 계약](docs/BIMANUAL_UPPER_APPLICATION_INTERFACE.md)
 - [Top-camera resident Pick/Place](docs/TOP_CAMERA_RESIDENT_PICK_PLACE_APPLICATION.md)
-- [Pi 카메라·연산 아키텍처](docs/CAMERA_COMPUTE_ARCHITECTURE.md)
-- [STM32 모듈 구조](docs/STM32_MODULAR_ARCHITECTURE.md)
+- [STM32 양팔 firmware 아키텍처](docs/FIRMWARE_DUAL_ARM_ARCHITECTURE.md)
 - [Pi–STM32 통신 규격](protocol/README.md)
 - [아키텍처 결정 기록(ADR)](docs/adr/README.md)
 

@@ -15,38 +15,25 @@
 공통 파일:
 
 ```text
-ros2_ws/src/single_arm_bridge/config/bridge.yaml
+ros2_ws/src/single_arm_bridge/config/bimanual_stream.yaml
 ```
 
-기본 `serial_device` 값은 `auto`다. node가 단일 ST-LINK by-id를 탐색하고, 발견하지 못하면 `/dev/ttyACM0`를 사용한다. 둘 이상의 ST-LINK가 발견되면 잘못된 팔을 제어하지 않도록 실행을 거부한다.
+기본 `serial_device` 값은 `auto`다(`device_discovery.resolve_serial_device`). node가 단일 ST-LINK by-id를 탐색하고, 발견하지 못하면 `/dev/ttyACM0`를 사용한다. 둘 이상의 ST-LINK가 발견되면 잘못된 팔을 제어하지 않도록 실행을 거부한다.
 
-장치를 명시적으로 고정하려면:
-
-```bash
-cd ~/Manipulation/ros2_ws/src/single_arm_bridge/config
-cp bridge.local.yaml.example bridge.local.yaml
-```
-
-그 후 `bridge.local.yaml`의 `<SERIAL>`을 다음 명령에서 확인한 실제 값으로 바꾼다.
+장치를 명시적으로 고정하려면 `serial_device`를 launch argument로 넘긴다(양팔 resident adapter는 별도 local YAML 오버레이 파일을 쓰지 않는다).
 
 ```bash
 ls -l /dev/serial/by-id/
+ros2 launch single_arm_bridge bimanual_stream.launch.py serial_device:=/dev/serial/by-id/<실제 값>
 ```
 
-다시 build한다.
+## 실행
 
 ```bash
-cd ~/Manipulation/ros2_ws
-source /opt/ros/jazzy/setup.bash
-colcon build --symlink-install --packages-select single_arm_bridge
-source install/setup.bash
+ros2 launch single_arm_bridge bimanual_stream.launch.py
 ```
 
-실행 명령은 기존과 같다.
-
-```bash
-ros2 launch single_arm_bridge bridge.launch.py
-```
+legacy `single_arm_bridge` 일반 trajectory backend(`bridge.launch.py`)는 비승인이다. 양팔 motion은 resident adapter(`bimanual_stream.launch.py`) 경로만 사용한다.
 
 ## 새 PC 또는 새 Pi로 이동할 때
 

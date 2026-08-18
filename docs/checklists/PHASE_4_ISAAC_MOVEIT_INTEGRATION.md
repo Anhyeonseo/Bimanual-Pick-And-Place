@@ -209,9 +209,9 @@ MoveIt actions -> /isaac/joint_command
 - home 후 project state의 모든 joint가 `0.03 rad` tolerance 이내
 
 상세 증거는
-[2026-07-24 시험 결과](../test-results/2026-07-24-isaac-moveit-left-arm-integration.md)에
+[2026-07-24 시험 결과](../archive/test-results/2026-07-24-isaac-moveit-left-arm-integration.md)에
 정리한다. physical q0 재정렬과 READ_ONLY TF 증거는
-[2026-07-26 q0 재정렬 시험](../test-results/2026-07-26-left-arm-q0-realignment.md)에
+[2026-07-26 q0 재정렬 시험](../archive/test-results/2026-07-26-left-arm-q0-realignment.md)에
 정리한다.
 
 ## 알려진 비차단 항목

@@ -132,10 +132,8 @@ python3 tools/plan_top_camera_pick_place_once.py   --plan-only   --routing-deadb
 선택 팔의 IK로 새로 풀며, 반대 팔 q0를 포함한 self-collision 검사를 통과해야 한다.
 기존 place의 **관절각**은 재사용하지 않는다.
 
-현재 펜 reference task는 wrist roll을 양팔 q0인 `0.0 rad`로 고정하고
-나머지 4축으로 TCP xyz를 맞춘다. 물체 yaw는 진단값이며 펜 실행 조건으로
-강제하지 않는다. 캔 task의 orientation-aware wrist roll은 다음 PR에서
-별도 승격한다.
+펜 reference task는 wrist roll을 양팔 q0인 `0.0 rad`로 고정하고 나머지 4축으로
+TCP xyz를 맞춘다. 물체 yaw는 진단값이며 펜 실행 조건으로 강제하지 않는다.
 
 그리퍼는 `raw 2048`까지 연 뒤 접근하고 grasp에서 `raw 1948`까지 닫는다.
 접촉 판정은 잔차 14 raw 이상이다. F8.9는 arm route tracking 90,000 µrad와
