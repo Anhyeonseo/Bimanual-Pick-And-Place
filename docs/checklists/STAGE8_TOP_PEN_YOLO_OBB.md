@@ -178,8 +178,8 @@ python3 tools/validate_top_pen_obb_training_dataset.py \
 ~~~bash
 python3 -m venv .venv-yolo-obb
 source .venv-yolo-obb/bin/activate
-python3 -m pip install --no-cache-dir -r requirements-training-cu128.txt
-python3 -m pip install -r requirements-training.txt
+python3 -m pip install --no-cache-dir -r requirements/training-cu128.txt
+python3 -m pip install -r requirements/training.txt
 ~~~
 
 먼저 학습 없이 계약만 확인한다.
@@ -257,7 +257,7 @@ python3 -m venv --system-site-packages \
 
 /home/pi/Manipulation/.venv-top-perception-opencv410/bin/python -m pip install \
   --require-hashes --no-deps \
-  -r /home/pi/Manipulation/requirements-top-perception-runtime.txt
+  -r /home/pi/Manipulation/requirements/top-perception-runtime.txt
 ~~~
 
 먼저 Top OBB runtime을 실행한다.

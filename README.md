@@ -57,7 +57,7 @@ Windows PowerShell에서 Python 환경과 자동 테스트를 준비한다.
 ```powershell
 py -3.12 -m venv .venv-host
 .\.venv-host\Scripts\Activate.ps1
-python -m pip install -r requirements-host.txt
+python -m pip install -r requirements/host.txt
 python -m unittest discover -s tests -p "test_*.py"
 python tools\validate_protocol_manifest.py
 ```
@@ -144,7 +144,7 @@ cp bridge.local.yaml.example bridge.local.yaml
 **기타**
 
 - [tools/ 분류표](tools/README.md)
-- [제3자 license 고지](THIRD_PARTY_NOTICES.md)
+- [제3자 license 고지](docs/THIRD_PARTY_NOTICES.md)
 
 ## 저장소 구조
 
@@ -188,4 +188,4 @@ colcon test-result --verbose
 
 ## License
 
-자체 작성 코드는 [Apache License 2.0](LICENSE)으로 공개한다. STM32 HAL, CMSIS와 BSP는 각 원본 파일 및 [제3자 license 고지](THIRD_PARTY_NOTICES.md)에 적힌 조건을 따른다.
+자체 작성 코드는 [Apache License 2.0](LICENSE)으로 공개한다. STM32 HAL, CMSIS와 BSP는 각 원본 파일 및 [제3자 license 고지](docs/THIRD_PARTY_NOTICES.md)에 적힌 조건을 따른다.

@@ -40,7 +40,7 @@ def _ultralytics_version() -> str:
     except ModuleNotFoundError as error:
         raise RuntimeError(
             "desktop training dependency is missing; install "
-            "requirements-training.txt in a dedicated virtual environment"
+            "requirements/training.txt in a dedicated virtual environment"
         ) from error
     version = getattr(module, "__version__", None)
     if version != "8.4.67":

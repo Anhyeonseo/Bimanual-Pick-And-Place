@@ -63,7 +63,7 @@ terminal에서 실행한다. 전체 실행 순서와 joint mapping은
 
 `assets/so101_new_calib`의 geometry는 TheRobotStudio SO-101 asset의
 commit `fda892cba81032c46c40976a48c9ceadbf40a9ca`에서 가져왔다.
-license는 root `THIRD_PARTY_NOTICES.md`와 `LICENSE`를 확인한다.
+license는 `docs/THIRD_PARTY_NOTICES.md`와 `LICENSE`를 확인한다.
 
 ## 양팔 q0 시각 정합 후보
 
