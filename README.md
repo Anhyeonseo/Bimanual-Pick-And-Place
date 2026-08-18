@@ -1,4 +1,4 @@
-# Headless 양팔 로봇 조작 시스템
+# 양팔 연속 펜 pick-and-place
 
 Raspberry Pi 5, ROS 2 Jazzy, STM32G474, 두 대의 SO-ARM101과 세 대의 USB 카메라를 통합한 멀티카메라 듀얼암 로봇 프로젝트다. 상단 카메라로 마커펜을 인식해 왼팔이 집고, 중간에서 오른팔에 넘겨, 오른팔이 목표 위치에 내려놓는 **양팔 연속 Pick and Place**를 완주한다.
 
